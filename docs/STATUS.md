@@ -14,7 +14,7 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 |---|---|---|---|
 | 1 | Repository Foundation | ✅ Complete | 12 / 16 planned files generated (see note below) |
 | 2 | Architecture | ✅ Complete | 7 / 7 |
-| 3 | Browser Layer | ⬜ Not started | 0 / 7 |
+| 3 | Browser Layer | ✅ Complete | 7 / 7 |
 | 4 | Visibility Engine | ⬜ Not started | 0 / 8 |
 | 5 | CSSOM | ⬜ Not started | 0 / 8 |
 | 6 | Selector Engine | ⬜ Not started | 0 / 6 |
@@ -91,6 +91,31 @@ All seven files verified to contain the full 17-section structure, Mermaid diagr
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in this phase
 
+## Phase 3 detail
+
+Generated in this session, all in `docs/design/`:
+
+- `100-Browser-Abstraction.md` — 6,335 words
+- `101-Playwright-Adapter.md` — 6,289 words
+- `102-Browser-Pool.md` — 6,813 words
+- `103-Navigation-Engine.md` — 6,431 words
+- `104-Rendering-Stabilization.md` — 7,721 words
+- `105-Viewport-Manager.md` — 6,956 words
+- `106-DOM-Snapshot.md` — 9,047 words
+
+All seven files verified to contain the full 17-section structure, Mermaid diagrams, pseudocode with complexity analysis, and cross-references to Phase 1/2 architecture docs, ADR-0003, and each other. `106-DOM-Snapshot.md` forward-references the not-yet-written `200-Visibility-Engine-Overview.md` (Phase 4) and `300-CSSOM-Walker.md` (Phase 5) as its downstream consumers.
+
+## Quality Checklist — Phase 3
+
+- [x] Every content file has all 17 required sections
+- [x] No content file is shorter than 3,000 words (all exceed 6,200 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in this phase
+
 ## Next
 
-Phase 3 — Browser Layer (`docs/design/100-Browser-Abstraction.md` through `106-DOM-Snapshot.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 2 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 3 — Browser Layer now."
+Phase 4 — Visibility Engine (`docs/design/200-Visibility-Engine-Overview.md` through `207-Virtualized-Lists.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 3 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 4 — Visibility Engine now."

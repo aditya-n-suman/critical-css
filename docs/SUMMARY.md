@@ -34,9 +34,17 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [ADR-0004-Plugin-Lifecycle-Model.md](adr/ADR-0004-Plugin-Lifecycle-Model.md)
 - [ADR-0005-Hybrid-Extraction-Mode.md](adr/ADR-0005-Hybrid-Extraction-Mode.md)
 
-## docs/design/ — Phases 3–13 (not yet generated)
+## docs/design/ — Phase 3 complete; Phases 4–13 not yet generated
 
-Planned: Browser Layer (100–106), Visibility Engine (200–207), CSSOM (300–307), Selector Engine (400–405), Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+- [100-Browser-Abstraction.md](design/100-Browser-Abstraction.md) — Engine-agnostic browser driver interface underlying the Playwright adapter.
+- [101-Playwright-Adapter.md](design/101-Playwright-Adapter.md) — Concrete Playwright implementation of the browser abstraction; Coverage API wiring.
+- [102-Browser-Pool.md](design/102-Browser-Pool.md) — Pooling strategy, acquisition/release lifecycle, crash recovery, backpressure.
+- [103-Navigation-Engine.md](design/103-Navigation-Engine.md) — Route navigation, request interception, waiting strategies, retry-on-timeout.
+- [104-Rendering-Stabilization.md](design/104-Rendering-Stabilization.md) — Detecting "page is settled enough to snapshot": fonts, animations, hydration, mutation-idle detection.
+- [105-Viewport-Manager.md](design/105-Viewport-Manager.md) — Viewport/device profile model, fold computation, emulation flags feeding multi-viewport extraction.
+- [106-DOM-Snapshot.md](design/106-DOM-Snapshot.md) — DOM snapshot capture across the Node/browser boundary; Shadow DOM and iframe handling.
+
+Planned (not yet generated): Visibility Engine (200–207), CSSOM (300–307), Selector Engine (400–405), Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
 
 ## docs/algorithms/ — Phase 7 (not yet generated)
 
