@@ -19,10 +19,10 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 5 | CSSOM | ✅ Complete | 8 / 8 |
 | 6 | Selector Engine | ✅ Complete | 6 / 6 |
 | 7 | Dependency Resolution | ✅ Complete | 9 / 9 |
-| 8 | Serialization | ⬜ Not started | 0 / 7 |
-| 9 | Advanced Extraction | ⬜ Not started | 0 / 5 |
-| 10 | Caching | ⬜ Not started | 0 / 7 |
-| 11 | SSR Integration | ⬜ Not started | 0 / 7 |
+| 8 | Serialization | ✅ Complete | 7 / 7 |
+| 9 | Advanced Extraction | ✅ Complete | 5 / 5 |
+| 10 | Caching | ✅ Complete | 7 / 7 |
+| 11 | SSR Integration | ✅ Complete | 7 / 7 |
 | 12 | Plugin SDK | ⬜ Not started | 0 / 5 |
 | 13 | Diagnostics | ⬜ Not started | 0 / 6 |
 | 14 | Performance | ⬜ Not started | 0 / 6 |
@@ -206,6 +206,57 @@ Generated in this session across 5 parallel background agents (each scoped to on
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in this phase
 
+## Phases 8-11 detail
+
+Generated in a single parallel batch of 15 background agents (Phases 8, 9, 10, and 11 have no sequential dependency on each other — all build only on already-complete Phases 1-7 and forward-reference each other where needed). All headings were explicitly instructed to use literal numbered form (`## 1. Title` … `## 17. References`) to avoid the section-mislabeling defect caught in Phase 7.
+
+**Phase 8 — Serialization** (`docs/design/`):
+- `600-Serialization-Overview.md` — 6,220 words
+- `601-Rule-Ordering.md` — 6,182 words
+- `602-Deduplication.md` — 6,656 words
+- `603-Compression.md` — 5,969 words
+- `604-Output-Validation.md` — 5,495 words
+- `605-Source-Maps.md` — 5,026 words
+- `606-Output-Formats.md` — 5,539 words
+
+**Phase 9 — Advanced Extraction** (`docs/design/`):
+- `700-Coverage-Mode.md` — 4,950 words
+- `701-Hybrid-Mode.md` — 5,028 words
+- `702-Computed-Style-Mode.md` — 6,828 words
+- `703-Visual-Diff.md` — 6,336 words
+- `704-Incremental-Extraction.md` — 6,122 words
+
+**Phase 10 — Caching** (`docs/design/`):
+- `800-Cache-Overview.md` — 5,220 words
+- `801-Fingerprinting.md` — 5,612 words
+- `802-Cache-Store.md` — 4,839 words
+- `803-Route-Cache.md` — 4,325 words
+- `804-Viewport-Cache.md` — 6,257 words
+- `805-Cache-Invalidation.md` — 8,666 words
+- `806-Distributed-Cache.md` — 5,618 words
+
+**Phase 11 — SSR Integration** (`docs/design/`):
+- `900-SSR-Overview.md` — 4,649 words
+- `901-React-SSR.md` — 3,882 words
+- `902-Express.md` — 4,713 words
+- `903-NextJS.md` — 4,431 words
+- `904-Astro.md` — 4,854 words
+- `905-Remix.md` — 4,374 words
+- `906-Fastify.md` — 4,351 words
+
+**Incident:** 12 of the 15 background agents hit an account-level API session limit mid-run (a second, later limit than the one hit in Phase 7). Despite "failed" status notifications, 25 of the 26 total files across all four phases had already been written to disk before each agent's failure. Only one file was genuinely missing (`805-Cache-Invalidation.md`) and was regenerated in a single follow-up agent call, which read the five already-written sibling cache docs first to keep its cross-references and forward-reference contracts consistent with what they already claimed about it. All 26 files verified for the literal 17/17 numbered section check — no mislabeling recurrence this time.
+
+## Quality Checklist — Phases 8-11
+
+- [x] Every content file has all 17 required sections (literal numbering verified)
+- [x] No content file is shorter than 3,000 words (all exceed 3,800 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in these phases
+
 ## Next
 
-Phase 8 — Serialization (`docs/design/600-Serialization-Overview.md` through `606-Output-Formats.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 7 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 8 — Serialization now."
+Phase 12 — Plugin SDK (`docs/plugins/000-Plugin-SDK-Overview.md` through `004-Sandboxing.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 8, 9, 10, and 11 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 12 — Plugin SDK now."

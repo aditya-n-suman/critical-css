@@ -87,7 +87,45 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [507-Dependency-Graph-Construction.md](algorithms/507-Dependency-Graph-Construction.md) — Incremental graph assembly from all per-type discovery algorithms.
 - [508-Cycle-Detection.md](algorithms/508-Cycle-Detection.md) — Incremental colored-DFS cycle detection and guaranteed-invalid-value recovery.
 
-Planned (not yet generated): Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+### Serialization — Phase 8 complete
+
+- [600-Serialization-Overview.md](design/600-Serialization-Overview.md) — Serializer module: resolved rule set → valid CSS string, sub-concern decomposition.
+- [601-Rule-Ordering.md](design/601-Rule-Ordering.md) — Preserving source order, cascade-layer order, and at-rule wrapper integrity.
+- [602-Deduplication.md](design/602-Deduplication.md) — Semantics-preserving dedup, including the multi-viewport merge case.
+- [603-Compression.md](design/603-Compression.md) — Deterministic minification: whitespace/comments/safe value shortening.
+- [604-Output-Validation.md](design/604-Output-Validation.md) — Re-parse validation gate: syntactic validity, no dropped dependencies.
+- [605-Source-Maps.md](design/605-Source-Maps.md) — Mapping emitted rules back to origin stylesheet + triggering DOM node.
+- [606-Output-Formats.md](design/606-Output-Formats.md) — Raw CSS, inline `<style>`, JSON envelope, and route manifest output formats.
+
+### Advanced Extraction — Phase 9 complete
+
+- [700-Coverage-Mode.md](design/700-Coverage-Mode.md) — Chrome CSS Coverage API extraction strategy and its blind spots.
+- [701-Hybrid-Mode.md](design/701-Hybrid-Mode.md) — Reconciling CSSOM matching + Coverage + computed-style signals (ADR-0005).
+- [702-Computed-Style-Mode.md](design/702-Computed-Style-Mode.md) — getComputedStyle as a verification/pruning signal within Hybrid mode.
+- [703-Visual-Diff.md](design/703-Visual-Diff.md) — Dual-render pixel-diff validation of rendering parity.
+- [704-Incremental-Extraction.md](design/704-Incremental-Extraction.md) — Skip/partial/full extraction strategy with correctness guardrails.
+
+### Caching — Phase 10 complete
+
+- [800-Cache-Overview.md](design/800-Cache-Overview.md) — Cache Manager module: fingerprint-keyed lookup, sub-concern decomposition.
+- [801-Fingerprinting.md](design/801-Fingerprinting.md) — Stable cache-key hashing of HTML, CSS assets, viewport, and mode.
+- [802-Cache-Store.md](design/802-Cache-Store.md) — Pluggable storage backend abstraction (memory/disk/remote).
+- [803-Route-Cache.md](design/803-Route-Cache.md) — Route-manifest-keyed caching with glob-pattern route templates.
+- [804-Viewport-Cache.md](design/804-Viewport-Cache.md) — Per-(route, viewport) cache entries and cross-viewport dedup.
+- [805-Cache-Invalidation.md](design/805-Cache-Invalidation.md) — Implicit fingerprint invalidation plus explicit purge/TTL/version-bump/cascade paths.
+- [806-Distributed-Cache.md](design/806-Distributed-Cache.md) — Shared remote cache for CI/multi-runner builds with local fallback.
+
+### SSR Integration — Phase 11 complete
+
+- [900-SSR-Overview.md](design/900-SSR-Overview.md) — Common adapter contract: route → cached critical CSS → inline injection.
+- [901-React-SSR.md](design/901-React-SSR.md) — Raw React SSR/streaming (renderToPipeableStream) adapter.
+- [902-Express.md](design/902-Express.md) — Express middleware response-interception adapter.
+- [903-NextJS.md](design/903-NextJS.md) — Next.js Pages Router and App Router adapter.
+- [904-Astro.md](design/904-Astro.md) — Astro integration-hook adapter (SSG-first, island architecture).
+- [905-Remix.md](design/905-Remix.md) — Remix entry.server nested-route adapter.
+- [906-Fastify.md](design/906-Fastify.md) — Fastify `onSend`-hook plugin adapter.
+
+Planned (not yet generated): Plugin SDK (Phase 12), Diagnostics (1000–1005, Phase 13), Performance (Phase 14), Testing (Phase 15), Implementation Task Catalog (Phase 16), Browser Specifications (Phase 17).
 
 ## docs/algorithms/ — Phase 7 complete
 
