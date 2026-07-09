@@ -55,7 +55,27 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [206-Fixed-Elements.md](design/206-Fixed-Elements.md) — `position: fixed` containing-block computation and always-critical-by-default policy.
 - [207-Virtualized-Lists.md](design/207-Virtualized-Lists.md) — Detection heuristics and mitigation for windowed-list rendering limitations.
 
-Planned (not yet generated): CSSOM (300–307), Selector Engine (400–405), Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+### CSSOM — Phase 5 complete
+
+- [300-CSSOM-Walker.md](design/300-CSSOM-Walker.md) — Traversing `document.styleSheets` and nested `CSSRule` objects into a rule tree.
+- [301-Stylesheet-Loader.md](design/301-Stylesheet-Loader.md) — Stylesheet discovery: `<link>`, `<style>`, dynamic injection, load-timing coordination.
+- [302-Rule-Tree.md](design/302-Rule-Tree.md) — The normalized in-memory rule tree data structure.
+- [303-Media-Rules.md](design/303-Media-Rules.md) — `@media` capture and per-viewport-profile applicability evaluation.
+- [304-Supports-Rules.md](design/304-Supports-Rules.md) — `@supports` feature-query evaluation via `CSS.supports()`, dead-code elimination.
+- [305-Cascade-Layers.md](design/305-Cascade-Layers.md) — `@layer` capture, layer ordering, and rule-to-layer assignment.
+- [306-At-Import.md](design/306-At-Import.md) — `@import` chain walking, cycle detection, conditional/layer-tagged imports.
+- [307-Constructable-Stylesheets.md](design/307-Constructable-Stylesheets.md) — `adoptedStyleSheets` discovery across document and Shadow DOM trees.
+
+### Selector Engine — Phase 6 complete
+
+- [400-Selector-Matching.md](design/400-Selector-Matching.md) — Core `element.matches()`-based matching loop and its correctness-first baseline.
+- [401-Selector-Memoization.md](design/401-Selector-Memoization.md) — Reverse-index memoization layer for matching performance.
+- [402-Pseudo-Elements.md](design/402-Pseudo-Elements.md) — Base-selector extraction and retention strategy for `::before`/`::after`/etc.
+- [403-Pseudo-Classes.md](design/403-Pseudo-Classes.md) — Static vs. dynamic (interaction-state) pseudo-class handling and its explicit limitations.
+- [404-Is-Where-Has.md](design/404-Is-Where-Has.md) — `:is()`/`:where()`/`:has()` matching, specificity nuances, and browser-support degradation.
+- [405-Container-Queries.md](design/405-Container-Queries.md) — `@container` evaluation against live-rendered container size, per viewport profile.
+
+Planned (not yet generated): Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
 
 ## docs/algorithms/ — Phase 7 (not yet generated)
 

@@ -16,8 +16,8 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 2 | Architecture | ✅ Complete | 7 / 7 |
 | 3 | Browser Layer | ✅ Complete | 7 / 7 |
 | 4 | Visibility Engine | ✅ Complete | 8 / 8 |
-| 5 | CSSOM | ⬜ Not started | 0 / 8 |
-| 6 | Selector Engine | ⬜ Not started | 0 / 6 |
+| 5 | CSSOM | ✅ Complete | 8 / 8 |
+| 6 | Selector Engine | ✅ Complete | 6 / 6 |
 | 7 | Dependency Resolution | ⬜ Not started | 0 / 9 |
 | 8 | Serialization | ⬜ Not started | 0 / 7 |
 | 9 | Advanced Extraction | ⬜ Not started | 0 / 5 |
@@ -142,6 +142,43 @@ All eight files verified to contain the full 17-section structure, Mermaid diagr
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in this phase
 
+## Phase 5 detail
+
+Generated in this session, all in `docs/design/`:
+
+- `300-CSSOM-Walker.md` — 7,069 words
+- `301-Stylesheet-Loader.md` — 6,947 words
+- `302-Rule-Tree.md` — 7,382 words
+- `303-Media-Rules.md` — 7,524 words
+- `304-Supports-Rules.md` — 5,560 words
+- `305-Cascade-Layers.md` — 6,735 words
+- `306-At-Import.md` — 6,410 words
+- `307-Constructable-Stylesheets.md` — 6,033 words
+
+## Phase 6 detail
+
+Generated in this session, all in `docs/design/`:
+
+- `400-Selector-Matching.md` — 5,485 words
+- `401-Selector-Memoization.md` — 5,621 words
+- `402-Pseudo-Elements.md` — 5,215 words
+- `403-Pseudo-Classes.md` — 5,962 words
+- `404-Is-Where-Has.md` — 7,307 words
+- `405-Container-Queries.md` — 7,429 words
+
+Phases 5 and 6 were generated in a single parallel batch across 7 background agents (no sequential dependency between the two phases — both build on already-complete Phase 3/4 docs and forward-reference each other where needed). All 14 files verified to contain the full 16-named-section-plus-title structure (some agents used unnumbered headings, e.g. `## Purpose` instead of `## 3. Purpose` — content and ordering are correct either way), Mermaid diagrams, pseudocode with complexity analysis, and cross-references.
+
+## Quality Checklist — Phases 5 & 6
+
+- [x] Every content file has all 17 required sections
+- [x] No content file is shorter than 3,000 words (all exceed 5,200 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in these phases
+
 ## Next
 
-Phase 5 — CSSOM (`docs/design/300-CSSOM-Walker.md` through `307-Constructable-Stylesheets.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 4 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 5 — CSSOM now."
+Phase 7 — Dependency Resolution (`docs/design/500-Dependency-Resolution-Overview.md` plus `docs/algorithms/501-CSS-Variables.md` through `508-Cycle-Detection.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 5 and 6 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 7 — Dependency Resolution now."
