@@ -18,7 +18,7 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 4 | Visibility Engine | ✅ Complete | 8 / 8 |
 | 5 | CSSOM | ✅ Complete | 8 / 8 |
 | 6 | Selector Engine | ✅ Complete | 6 / 6 |
-| 7 | Dependency Resolution | ⬜ Not started | 0 / 9 |
+| 7 | Dependency Resolution | ✅ Complete | 9 / 9 |
 | 8 | Serialization | ⬜ Not started | 0 / 7 |
 | 9 | Advanced Extraction | ⬜ Not started | 0 / 5 |
 | 10 | Caching | ⬜ Not started | 0 / 7 |
@@ -179,6 +179,33 @@ Phases 5 and 6 were generated in a single parallel batch across 7 background age
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in these phases
 
+## Phase 7 detail
+
+Generated in this session across 5 parallel background agents (each scoped to only the specific context files its topic needed):
+
+- `docs/design/500-Dependency-Resolution-Overview.md` — 6,637 words
+- `docs/algorithms/501-CSS-Variables.md` — 6,089 words
+- `docs/algorithms/502-Keyframes.md` — 7,007 words
+- `docs/algorithms/503-Font-Faces.md` — 7,102 words
+- `docs/algorithms/504-At-Property.md` — 7,125 words
+- `docs/algorithms/505-Counters.md` — 6,544 words
+- `docs/algorithms/506-Cascade-Layers.md` — 6,882 words
+- `docs/algorithms/507-Dependency-Graph-Construction.md` — 7,365 words
+- `docs/algorithms/508-Cycle-Detection.md` — 7,794 words
+
+**Incident:** 4 of the 5 background agents hit an account-level API session limit mid-run (after writing their files but before their final report-back). All 9 files were confirmed present on disk despite the "failed" status. One file, `508-Cycle-Detection.md`, had its Architecture and Algorithms sections mislabeled (the Mermaid diagrams and pseudocode were nested as `### 8.4`/`### 8.5` subsections of Detailed Design instead of standalone `## 9. Architecture` / `## 10. Algorithms` sections). Fixed by re-titling headings and merging the two sections that had taken sections 9/10's numbers (`Guaranteed-Invalid-Value Semantics`, `Complexity Analysis`) into `10.1`/`10.2` subsections of the new Algorithms section — no content was removed. All other 8 files had correct section structure on first generation.
+
+## Quality Checklist — Phase 7
+
+- [x] Every content file has all 17 required sections
+- [x] No content file is shorter than 3,000 words (all exceed 6,000 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in this phase
+
 ## Next
 
-Phase 7 — Dependency Resolution (`docs/design/500-Dependency-Resolution-Overview.md` plus `docs/algorithms/501-CSS-Variables.md` through `508-Cycle-Detection.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 5 and 6 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 7 — Dependency Resolution now."
+Phase 8 — Serialization (`docs/design/600-Serialization-Overview.md` through `606-Output-Formats.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 7 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 8 — Serialization now."

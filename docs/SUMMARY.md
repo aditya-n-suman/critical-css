@@ -75,11 +75,23 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [404-Is-Where-Has.md](design/404-Is-Where-Has.md) — `:is()`/`:where()`/`:has()` matching, specificity nuances, and browser-support degradation.
 - [405-Container-Queries.md](design/405-Container-Queries.md) — `@container` evaluation against live-rendered container size, per viewport profile.
 
-Planned (not yet generated): Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+### Dependency Resolution — Phase 7 complete
 
-## docs/algorithms/ — Phase 7 (not yet generated)
+- [500-Dependency-Resolution-Overview.md](design/500-Dependency-Resolution-Overview.md) — Fixed-point resolution loop orchestrating the per-type algorithms below.
+- [501-CSS-Variables.md](algorithms/501-CSS-Variables.md) — Custom property (`var()`) dependency discovery, chained/fallback values.
+- [502-Keyframes.md](algorithms/502-Keyframes.md) — `@keyframes` dependency discovery via `animation-name`.
+- [503-Font-Faces.md](algorithms/503-Font-Faces.md) — `@font-face` dependency discovery and weight/style matching tradeoffs.
+- [504-At-Property.md](algorithms/504-At-Property.md) — `@property` registration retention alongside variable usage.
+- [505-Counters.md](algorithms/505-Counters.md) — `@counter-style` dependency discovery via `counter()`/`counters()`.
+- [506-Cascade-Layers.md](algorithms/506-Cascade-Layers.md) — Layer-aware dependency edge annotation for cross-layer dependencies.
+- [507-Dependency-Graph-Construction.md](algorithms/507-Dependency-Graph-Construction.md) — Incremental graph assembly from all per-type discovery algorithms.
+- [508-Cycle-Detection.md](algorithms/508-Cycle-Detection.md) — Incremental colored-DFS cycle detection and guaranteed-invalid-value recovery.
 
-Planned: `501-CSS-Variables.md`, `502-Keyframes.md`, `503-Font-Faces.md`, `504-At-Property.md`, `505-Counters.md`, `506-Cascade-Layers.md`, `507-Dependency-Graph-Construction.md`, `508-Cycle-Detection.md`.
+Planned (not yet generated): Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+
+## docs/algorithms/ — Phase 7 complete
+
+See `501-CSS-Variables.md` through `508-Cycle-Detection.md` listed above under Dependency Resolution (they live in `docs/algorithms/`, cross-referenced from `docs/design/500-Dependency-Resolution-Overview.md`).
 
 ## docs/api/ (not yet generated)
 
