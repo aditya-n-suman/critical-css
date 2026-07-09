@@ -125,7 +125,42 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [905-Remix.md](design/905-Remix.md) — Remix entry.server nested-route adapter.
 - [906-Fastify.md](design/906-Fastify.md) — Fastify `onSend`-hook plugin adapter.
 
-Planned (not yet generated): Plugin SDK (Phase 12), Diagnostics (1000–1005, Phase 13), Performance (Phase 14), Testing (Phase 15), Implementation Task Catalog (Phase 16), Browser Specifications (Phase 17).
+### Diagnostics — Phase 13 complete
+
+- [1000-Diagnostics-Overview.md](design/1000-Diagnostics-Overview.md) — Reporter module's full scope: dependency graph, selector reports, timing, trace.
+- [1001-Logging.md](design/1001-Logging.md) — Structured logging, correlation IDs, redaction, pluggable sinks.
+- [1002-Metrics.md](design/1002-Metrics.md) — Per-stage timing/counters, aggregation, CI-dashboard export.
+- [1003-Tracing.md](design/1003-Tracing.md) — Per-run trace tree, OpenTelemetry-compatible span export.
+- [1004-Visualization.md](design/1004-Visualization.md) — Annotated above-fold/matched-rule HTML visualization.
+- [1005-Debug-UI.md](design/1005-Debug-UI.md) — `apps/visualizer` interactive debug UI.
+
+Planned (not yet generated): Implementation Task Catalog (Phase 16), Browser Specifications (Phase 17).
+
+## docs/plugins/ — Phase 12 complete
+
+- [000-Plugin-SDK-Overview.md](plugins/000-Plugin-SDK-Overview.md) — Plugin shape, registration, relationship to ADR-0004.
+- [001-Lifecycle-Hooks.md](plugins/001-Lifecycle-Hooks.md) — Deep dive on all six lifecycle hooks and multi-plugin ordering.
+- [002-Plugin-API.md](plugins/002-Plugin-API.md) — Concrete Plugin interface, hook signatures, context object.
+- [003-Plugin-Examples.md](plugins/003-Plugin-Examples.md) — Worked plugin examples (virtualized-list force-render, synthetic focus state, prefix stripping).
+- [004-Sandboxing.md](plugins/004-Sandboxing.md) — Isolation model, capability boundaries, timeout enforcement, error containment.
+
+## docs/performance/ — Phase 14 complete
+
+- [000-Performance-Overview.md](performance/000-Performance-Overview.md) — Performance program and cost-center breakdown.
+- [001-Worker-Threads.md](performance/001-Worker-Threads.md) — Worker-pool sizing, work-stealing, offload-granularity guidance.
+- [002-Parallelization-Strategy.md](performance/002-Parallelization-Strategy.md) — Cross-cutting parallelization map and what's inherently sequential.
+- [003-Rule-Indexing.md](performance/003-Rule-Indexing.md) — Engine-level rule indexing, breakeven economics, cross-viewport reuse.
+- [004-Memory-Optimization.md](performance/004-Memory-Optimization.md) — Streaming output, prompt state release, memory profiling.
+- [005-Benchmarks.md](performance/005-Benchmarks.md) — Benchmark suite methodology and CI regression-detection thresholds.
+
+## docs/testing/ — Phase 15 complete
+
+- [000-Testing-Strategy.md](testing/000-Testing-Strategy.md) — Five-layer test pyramid and CI gating.
+- [001-Fixtures.md](testing/001-Fixtures.md) — The ten-fixture catalog and what each guards against.
+- [002-Visual-Tests.md](testing/002-Visual-Tests.md) — Cross-time visual regression suite built on 703-Visual-Diff.md.
+- [003-Golden-Files.md](testing/003-Golden-Files.md) — Byte-exact determinism snapshot testing.
+- [004-Performance-Tests.md](testing/004-Performance-Tests.md) — CI-gating performance thresholds and noise handling.
+- [005-Regression-Tests.md](testing/005-Regression-Tests.md) — Bug-to-fixture discipline and subsystem triage taxonomy.
 
 ## docs/algorithms/ — Phase 7 complete
 

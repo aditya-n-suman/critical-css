@@ -23,10 +23,10 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 9 | Advanced Extraction | ✅ Complete | 5 / 5 |
 | 10 | Caching | ✅ Complete | 7 / 7 |
 | 11 | SSR Integration | ✅ Complete | 7 / 7 |
-| 12 | Plugin SDK | ⬜ Not started | 0 / 5 |
-| 13 | Diagnostics | ⬜ Not started | 0 / 6 |
-| 14 | Performance | ⬜ Not started | 0 / 6 |
-| 15 | Testing | ⬜ Not started | 0 / 6 |
+| 12 | Plugin SDK | ✅ Complete | 5 / 5 |
+| 13 | Diagnostics | ✅ Complete | 6 / 6 |
+| 14 | Performance | ✅ Complete | 6 / 6 |
+| 15 | Testing | ✅ Complete | 6 / 6 |
 | 16 | Implementation Task Catalog | ⬜ Not started | 0 / 5 + task cards |
 | 17 | Browser Specifications | ⬜ Not started | 0 / 9 |
 
@@ -257,6 +257,54 @@ Generated in a single parallel batch of 15 background agents (Phases 8, 9, 10, a
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in these phases
 
+## Phases 12-15 detail
+
+Generated in a single parallel batch of 12 background agents (Phases 12, 13, 14, and 15 have no sequential dependency on each other — all build only on already-complete Phases 1-11).
+
+**Phase 12 — Plugin SDK** (`docs/plugins/`):
+- `000-Plugin-SDK-Overview.md` — 6,626 words
+- `001-Lifecycle-Hooks.md` — 7,908 words
+- `002-Plugin-API.md` — 7,342 words
+- `003-Plugin-Examples.md` — 6,682 words
+- `004-Sandboxing.md` — 8,160 words
+
+**Phase 13 — Diagnostics** (`docs/design/`):
+- `1000-Diagnostics-Overview.md` — 6,455 words
+- `1001-Logging.md` — 5,676 words
+- `1002-Metrics.md` — 5,320 words
+- `1003-Tracing.md` — 5,403 words
+- `1004-Visualization.md` — 6,101 words
+- `1005-Debug-UI.md` — 5,915 words
+
+**Phase 14 — Performance** (`docs/performance/`):
+- `000-Performance-Overview.md` — 4,621 words
+- `001-Worker-Threads.md` — 5,288 words
+- `002-Parallelization-Strategy.md` — 7,519 words
+- `003-Rule-Indexing.md` — 7,980 words
+- `004-Memory-Optimization.md` — 6,643 words
+- `005-Benchmarks.md` — 6,711 words
+
+**Phase 15 — Testing** (`docs/testing/`):
+- `000-Testing-Strategy.md` — 6,540 words
+- `001-Fixtures.md` — 6,517 words
+- `002-Visual-Tests.md` — 6,858 words
+- `003-Golden-Files.md` — 7,353 words
+- `004-Performance-Tests.md` — 5,644 words
+- `005-Regression-Tests.md` — 5,933 words
+
+All 23 files verified for the literal 17/17 numbered section check on the first pass — no agent failures or regeneration needed this batch, unlike Phases 7-11.
+
+## Quality Checklist — Phases 12-15
+
+- [x] Every content file has all 17 required sections (literal numbering verified)
+- [x] No content file is shorter than 3,000 words (all exceed 4,600 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in these phases
+
 ## Next
 
-Phase 12 — Plugin SDK (`docs/plugins/000-Plugin-SDK-Overview.md` through `004-Sandboxing.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 8, 9, 10, and 11 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 12 — Plugin SDK now."
+Phase 16 — Implementation Task Catalog (`docs/implementation/000-Architecture-Tasks.md` through `004-Definition-of-Done.md`, plus atomic task cards in `docs/tasks/`) is the next session's scope, followed by Phase 17 — Browser Specifications (`docs/spec/`). Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 12, 13, 14, and 15 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 16 — Implementation Task Catalog now."
