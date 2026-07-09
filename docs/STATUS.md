@@ -15,7 +15,7 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 1 | Repository Foundation | ✅ Complete | 12 / 16 planned files generated (see note below) |
 | 2 | Architecture | ✅ Complete | 7 / 7 |
 | 3 | Browser Layer | ✅ Complete | 7 / 7 |
-| 4 | Visibility Engine | ⬜ Not started | 0 / 8 |
+| 4 | Visibility Engine | ✅ Complete | 8 / 8 |
 | 5 | CSSOM | ⬜ Not started | 0 / 8 |
 | 6 | Selector Engine | ⬜ Not started | 0 / 6 |
 | 7 | Dependency Resolution | ⬜ Not started | 0 / 9 |
@@ -116,6 +116,32 @@ All seven files verified to contain the full 17-section structure, Mermaid diagr
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in this phase
 
+## Phase 4 detail
+
+Generated in this session, all in `docs/design/`:
+
+- `200-Visibility-Engine-Overview.md` — 6,083 words
+- `201-Geometry-Engine.md` — 7,605 words
+- `202-Intersection-Engine.md` — 7,312 words
+- `203-Overflow-Handling.md` — 8,935 words
+- `204-Transform-Handling.md` — 7,236 words
+- `205-Sticky-Elements.md` — 7,104 words
+- `206-Fixed-Elements.md` — 7,632 words
+- `207-Virtualized-Lists.md` — 8,959 words
+
+All eight files verified to contain the full 17-section structure, Mermaid diagrams, pseudocode with complexity analysis, and cross-references to Phase 1–3 docs and each other. Note: the agent generating 202/203 failed mid-stream after writing 202; 203-Overflow-Handling.md was regenerated in a follow-up pass and verified independently — no content gap remains.
+
+## Quality Checklist — Phase 4
+
+- [x] Every content file has all 17 required sections
+- [x] No content file is shorter than 3,000 words (all exceed 6,000 words)
+- [x] Mermaid diagrams present in every file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in this phase
+
 ## Next
 
-Phase 4 — Visibility Engine (`docs/design/200-Visibility-Engine-Overview.md` through `207-Virtualized-Lists.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 3 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 4 — Visibility Engine now."
+Phase 5 — CSSOM (`docs/design/300-CSSOM-Walker.md` through `307-Constructable-Stylesheets.md`) is the next session's scope. Per `BRIEF.md` Section 9, feed the brief again and append: "Phase 4 is complete. The generated files are listed in docs/STATUS.md. Begin Phase 5 — CSSOM now."

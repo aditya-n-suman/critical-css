@@ -44,7 +44,18 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [105-Viewport-Manager.md](design/105-Viewport-Manager.md) — Viewport/device profile model, fold computation, emulation flags feeding multi-viewport extraction.
 - [106-DOM-Snapshot.md](design/106-DOM-Snapshot.md) — DOM snapshot capture across the Node/browser boundary; Shadow DOM and iframe handling.
 
-Planned (not yet generated): Visibility Engine (200–207), CSSOM (300–307), Selector Engine (400–405), Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
+### Visibility Engine — Phase 4 complete
+
+- [200-Visibility-Engine-Overview.md](design/200-Visibility-Engine-Overview.md) — Umbrella overview, visibility predicate, decomposition into sub-engines.
+- [201-Geometry-Engine.md](design/201-Geometry-Engine.md) — Bounding-rect computation, coordinate space normalization, layout-thrash avoidance.
+- [202-Intersection-Engine.md](design/202-Intersection-Engine.md) — Fold/viewport intersection test, configurable margins, nested-scroll and multi-viewport intersection.
+- [203-Overflow-Handling.md](design/203-Overflow-Handling.md) — Ancestor-chain overflow-clip, clip-path approximation, scrollable-ancestor offsets.
+- [204-Transform-Handling.md](design/204-Transform-Handling.md) — Transform-aware bounding boxes, ignore-transformed-offscreen option.
+- [205-Sticky-Elements.md](design/205-Sticky-Elements.md) — `position: sticky` stuck/unstuck states and their visibility policy.
+- [206-Fixed-Elements.md](design/206-Fixed-Elements.md) — `position: fixed` containing-block computation and always-critical-by-default policy.
+- [207-Virtualized-Lists.md](design/207-Virtualized-Lists.md) — Detection heuristics and mitigation for windowed-list rendering limitations.
+
+Planned (not yet generated): CSSOM (300–307), Selector Engine (400–405), Dependency Resolution overview (500), Serialization (600–606), Advanced Extraction (700–704), Caching (800–806), SSR Integration (900–906), Diagnostics (1000–1005).
 
 ## docs/algorithms/ — Phase 7 (not yet generated)
 
