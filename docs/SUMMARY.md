@@ -18,13 +18,13 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [005-Glossary.md](architecture/005-Glossary.md) — Alphabetized reference glossary of acronyms and proper nouns.
 - [006-Design-Principles.md](architecture/006-Design-Principles.md) — Governing engineering principles and their consequences for module design.
 - [007-Repository-Structure.md](architecture/007-Repository-Structure.md) — Canonical monorepo layout, package responsibilities, dependency graph.
-- *(Phase 2, not yet generated)* `010-System-Overview.md`
-- *(Phase 2, not yet generated)* `011-Execution-Pipeline.md`
-- *(Phase 2, not yet generated)* `012-Module-Interaction.md`
-- *(Phase 2, not yet generated)* `013-Component-Diagram.md`
-- *(Phase 2, not yet generated)* `014-Dependency-Graph.md`
-- *(Phase 2, not yet generated)* `015-Runtime-Model.md`
-- *(Phase 2, not yet generated)* `016-Data-Flow.md`
+- [010-System-Overview.md](architecture/010-System-Overview.md) — End-to-end pipeline overview: CLI through Plugin System, module grouping by concern.
+- [011-Execution-Pipeline.md](architecture/011-Execution-Pipeline.md) — Single-route extraction as a staged process/state machine, with sequence and state diagrams.
+- [012-Module-Interaction.md](architecture/012-Module-Interaction.md) — Runtime call/event contracts between the 15 modules; plugin hook placement on the interaction graph.
+- [013-Component-Diagram.md](architecture/013-Component-Diagram.md) — C4-Component-style provided/required interfaces (ports) per module.
+- [014-Dependency-Graph.md](architecture/014-Dependency-Graph.md) — The runtime CSS dependency graph (variables, keyframes, font-faces, etc.) — distinct from the package build-graph in 007.
+- [015-Runtime-Model.md](architecture/015-Runtime-Model.md) — Node host vs. browser-renderer process boundary, concurrency and memory model, plugin sandboxing.
+- [016-Data-Flow.md](architecture/016-Data-Flow.md) — Data transformations end-to-end, including multi-viewport fan-out/fan-in.
 
 ## docs/adr/ — Phase 1
 
