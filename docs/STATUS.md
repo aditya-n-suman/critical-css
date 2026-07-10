@@ -27,8 +27,8 @@ Tracks completion of each documentation phase defined in `BRIEF.md` Section 5. U
 | 13 | Diagnostics | ✅ Complete | 6 / 6 |
 | 14 | Performance | ✅ Complete | 6 / 6 |
 | 15 | Testing | ✅ Complete | 6 / 6 |
-| 16 | Implementation Task Catalog | ⬜ Not started | 0 / 5 + task cards |
-| 17 | Browser Specifications | ⬜ Not started | 0 / 9 |
+| 16 | Implementation Task Catalog | ✅ Complete | 5 / 5 + 11 task cards |
+| 17 | Browser Specifications | ✅ Complete | 9 / 9 |
 
 ## Phase 1 detail
 
@@ -305,6 +305,42 @@ All 23 files verified for the literal 17/17 numbered section check on the first 
 - [x] SUMMARY.md and STATUS.md updated
 - [x] No split files were needed in these phases
 
-## Next
+## Phases 16-17 detail
 
-Phase 16 — Implementation Task Catalog (`docs/implementation/000-Architecture-Tasks.md` through `004-Definition-of-Done.md`, plus atomic task cards in `docs/tasks/`) is the next session's scope, followed by Phase 17 — Browser Specifications (`docs/spec/`). Per `BRIEF.md` Section 9, feed the brief again and append: "Phases 12, 13, 14, and 15 are complete. The generated files are listed in docs/STATUS.md. Begin Phase 16 — Implementation Task Catalog now."
+Generated across two batches of background agents (the second batch recovering from a hard account-level session-limit incident — see below).
+
+**Phase 16 — Implementation Task Catalog:**
+- `docs/implementation/000-Architecture-Tasks.md` — 4,789 words
+- `docs/implementation/001-Task-Breakdown.md` — 6,644 words
+- `docs/implementation/002-Milestones.md` — 6,137 words
+- `docs/implementation/003-Acceptance-Tests.md` — 6,312 words
+- `docs/implementation/004-Definition-of-Done.md` — 4,794 words
+- `docs/tasks/001-Implement-Browser-Pool.md` through `011-Implement-CLI.md` — 11 atomic task cards, 720-1,050 words each (short-form by design; task cards are an explicit exception to the 3,000-word minimum, per `BRIEF.md`'s "one file per atomic implementation task" instruction)
+
+**Phase 17 — Browser Specifications** (`docs/spec/`):
+- `000-CSSOM.md` — 6,744 words
+- `001-CSS-Variables.md` — 7,083 words
+- `002-Cascade.md` — 6,476 words
+- `003-Media-Queries.md` — 5,730 words
+- `004-Shadow-DOM.md` — 7,585 words
+- `005-Coverage-API.md` — 7,420 words
+- `006-Container-Queries.md` — 4,776 words
+- `007-Nested-CSS.md` — 4,914 words
+- `008-Constructable-Stylesheets.md` — 5,015 words
+
+**Incident:** The first batch of 9 agents for these two phases hit a hard account-level session limit almost immediately (unlike prior incidents, most agents failed before writing anything). Only 3 of ~25 files landed: `000-Architecture-Tasks.md`, `004-Definition-of-Done.md`, and one task card. After the limit cleared, a second batch of 8 agents (scoped to only the missing files, reusing already-written siblings as models/context) completed the remaining ~22 files successfully. Two files (`002-Cascade.md`, `003-Media-Queries.md`) inserted extra top-level sections instead of nesting new content under "Detailed Design," inflating their section count to 20 and 18 respectively — fixed by demoting the extra sections to numbered subsections of Section 8 and renumbering the remaining sections back down to the mandated 17, with no content loss.
+
+## Quality Checklist — Phases 16-17
+
+- [x] Every content file (excluding intentionally-short task cards) has all 17 required sections
+- [x] No content file is shorter than 3,000 words; task cards intentionally short (700-1,050 words) per the atomic-task-card exception
+- [x] Mermaid diagrams present in every content file
+- [x] Every algorithm section includes pseudocode and complexity notation
+- [x] Every design choice includes alternatives and tradeoffs
+- [x] Cross-references use correct relative paths
+- [x] SUMMARY.md and STATUS.md updated
+- [x] No split files were needed in these phases
+
+## Project Status: All 17 Phases Complete
+
+Every phase defined in `BRIEF.md` Section 5 has been generated, verified, and committed. The documentation repository is complete: 001-Vision.md through 008-Constructable-Stylesheets.md, spanning architecture, ADRs, design docs for every module, algorithm RFCs, API/plugin SDK docs, testing/performance/diagnostics docs, and the full implementation task catalog.

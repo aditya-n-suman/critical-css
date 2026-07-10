@@ -134,7 +134,28 @@ This file is kept up to date after every documentation phase. It lists every doc
 - [1004-Visualization.md](design/1004-Visualization.md) — Annotated above-fold/matched-rule HTML visualization.
 - [1005-Debug-UI.md](design/1005-Debug-UI.md) — `apps/visualizer` interactive debug UI.
 
-Planned (not yet generated): Implementation Task Catalog (Phase 16), Browser Specifications (Phase 17).
+## docs/implementation/ + docs/tasks/ — Phase 16 complete
+
+- [000-Architecture-Tasks.md](implementation/000-Architecture-Tasks.md) — Package-level task groups, one per canonical-layout package, with build ordering.
+- [001-Task-Breakdown.md](implementation/001-Task-Breakdown.md) — Finer-grained breakdown items per architecture task, relative sizing.
+- [002-Milestones.md](implementation/002-Milestones.md) — M0-M5 milestones mapped to the 5-phase engine roadmap, exit criteria.
+- [003-Acceptance-Tests.md](implementation/003-Acceptance-Tests.md) — BRIEF §2.18's 7 acceptance criteria mapped to concrete proving tests.
+- [004-Definition-of-Done.md](implementation/004-Definition-of-Done.md) — Universal DoD checklist every task must satisfy.
+- [tasks/001-Implement-Browser-Pool.md](tasks/001-Implement-Browser-Pool.md) through [tasks/011-Implement-CLI.md](tasks/011-Implement-CLI.md) — 11 atomic task cards (short-form, 700-1050 words each, exempt from the standard 3000-word minimum), one per major package/subsystem.
+
+## docs/spec/ — Phase 17 complete
+
+- [000-CSSOM.md](spec/000-CSSOM.md) — CSS Object Model: stylesheet/rule hierarchy, cross-origin restrictions.
+- [001-CSS-Variables.md](spec/001-CSS-Variables.md) — Custom Properties spec: var() substitution timing, guaranteed-invalid value.
+- [002-Cascade.md](spec/002-Cascade.md) — Cascading and Inheritance: full sort order, !important/layer interaction.
+- [003-Media-Queries.md](spec/003-Media-Queries.md) — Media Queries Level 4/5: features, matchMedia as canonical API.
+- [004-Shadow-DOM.md](spec/004-Shadow-DOM.md) — Shadow DOM: slot assignment, style encapsulation, adoptedStyleSheets.
+- [005-Coverage-API.md](spec/005-Coverage-API.md) — CDP CSS Coverage domain: what "used" means, Chromium-only scope.
+- [006-Container-Queries.md](spec/006-Container-Queries.md) — Containment/Container Queries: container-type, nearest-container resolution.
+- [007-Nested-CSS.md](spec/007-Nested-CSS.md) — CSS Nesting: desugaring to flat rules, specificity composition.
+- [008-Constructable-Stylesheets.md](spec/008-Constructable-Stylesheets.md) — Constructable Stylesheet Objects: adoptedStyleSheets sharing semantics.
+
+All 17 documentation phases are now complete.
 
 ## docs/plugins/ — Phase 12 complete
 
