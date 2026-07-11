@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Async fixture</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      .shell { height: 400px; background: #fafafa; padding: 16px; }
+      .late { background: #0a6; color: #fff; padding: 12px; }
+      .spacer { height: 1500px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1>Async page</h1>
+      <div id="mount"></div>
+    </div>
+    <div class="spacer"></div>
+    <script>
+      // Appends an above-fold element 100ms after load — exercises the
+      // rendering-stabilization heuristic (docs/design/104).
+      setTimeout(function () {
+        var el = document.createElement('div')
+        el.id = 'late'
+        el.className = 'late'
+        el.textContent = 'I arrived late'
+        document.getElementById('mount').appendChild(el)
+      }, 100)
+    </script>
+  </body>
+</html>

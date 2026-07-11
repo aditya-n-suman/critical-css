@@ -10,49 +10,31 @@
 
 | Field | Value |
 |---|---|
-| Active milestone | **M0 — Foundation** |
-| Active package | **Not started** |
-| Active task | **Not started — begin with monorepo scaffold** |
-| Last session | 2026-07-11 (plan + agent brief authored) |
+| Active milestone | **M1 — CSSOM Extraction MVP** |
+| Active package | **packages/collector** |
+| Active task | **M1 step 1 — collector (CSSOM Walker + DOM Collector)** |
+| Last session | 2026-07-11 (M0 complete: scaffold + shared + browser) |
 | Next action | See "What to do next" below |
 
 ---
 
 ## What to Do Next
 
-**Start M0 — Foundation.**
+**Start M1 — CSSOM Extraction MVP.** (M0 is complete.)
 
-Execute in this order:
+Execute in this order (per `AGENT_IMPL_BRIEF.md §Phase M1`):
 
-1. **Monorepo scaffold** (no package — root level)
-   - Create `package.json` (pnpm workspace root, scripts: `build`, `test`, `typecheck`, `lint`, `format`)
-   - Create `pnpm-workspace.yaml` (include `packages/*`, `apps/*`)
-   - Create `tsconfig.base.json` (strict, ES2022 target, NodeNext module)
-   - Create `turbo.json` (pipeline: `build` → `test` → `typecheck`)
-   - Create `vitest.workspace.ts`
-   - Create `.nvmrc` (`18`)
-   - Create `.gitignore`
-   - Run `pnpm install` — must succeed
-
-2. **`packages/shared`** (AT-01)
-   - Read `docs/implementation/001-Task-Breakdown.md §8.2` (BI-01.1 through BI-01.5)
-   - Read `docs/architecture/003-Requirements.md`, `004-Terminology.md`, `005-Glossary.md`
-   - Read `docs/design/1000-Diagnostics-Overview.md` (error taxonomy)
-   - Implement: all DTOs, config schema types, error hierarchy
-   - Write unit tests for error-to-diagnostic conversion
-   - Verify: `pnpm --filter shared build` exits 0, no Node/DOM imports in `src/`
-
-3. **`packages/browser`** (AT-02) — can scaffold in parallel with step 2 once shared DTOs are stubbed
-   - Read `docs/tasks/001-Implement-Browser-Pool.md` (primary task card)
-   - Read `docs/design/100–106` (all 7 browser layer design docs)
-   - Read `docs/adr/ADR-0001-Browser-Is-Source-of-Truth.md`, `ADR-0003-Playwright-As-Browser-Abstraction.md`
-   - Implement: `BrowserManager`, `NavigationEngine`, `ViewportManager`, `DOMSnapshot`
-   - Create `fixtures/` with 3 HTML test fixtures (static, async-content, mobile-layout)
-   - Write integration tests: navigate 3 fixtures, assert no resource leak, mobile viewport applied, stabilization reports stable
-   - Verify: `pnpm --filter browser test` exits 0
-
-4. **M0 exit criteria check** (see `IMPLEMENTATION_PLAN.md §M0` — all 6 must pass)
-5. **Update this file** (`IMPL_STATUS.md`) before ending the session
+1. **`packages/collector`** — CSSOM Walker + DOM Collector sub-modules
+   - Read `docs/tasks/002-Implement-CSSOM-Walker.md`, `docs/design/300–307`, `docs/design/106`
+   - Read `docs/implementation/001-Task-Breakdown.md §8.4` (BI-03.*)
+2. **`packages/matcher`** — `element.matches()`-only selector matching
+   - Read `docs/tasks/003-Implement-Selector-Matcher.md`, `docs/design/400–405`, `docs/adr/ADR-0002`
+3. **`packages/serializer`** (basic slice: rule ordering + string output)
+   - Read `docs/tasks/006-Implement-Serializer.md`, `docs/design/600–601`
+4. **`apps/cli`** (MVP: `extract --url <url> [--viewport ...] [--output ...]`)
+   - Read `docs/tasks/011-Implement-CLI.md`
+5. **Golden baseline**: generate `fixtures/golden/{static,async,mobile}.css` and commit
+6. **M1 exit criteria check**, then update this file
 
 ---
 
@@ -62,18 +44,18 @@ Execute in this order:
 
 | Item | Status | Notes |
 |---|---|---|
-| Monorepo scaffold (root config files) | Not started | |
-| `packages/shared` scaffold (BI-01.1) | Not started | |
-| `packages/shared` DTOs (BI-01.2) | Not started | |
-| `packages/shared` error hierarchy (BI-01.3) | Not started | |
-| `packages/shared` unit tests (BI-01.4) | Not started | |
-| `packages/browser` scaffold (BI-02.1) | Not started | |
-| `packages/browser` BrowserManager + pool (BI-02.2) | Not started | |
-| `packages/browser` NavigationEngine + stabilization (BI-02.3) | Not started | |
-| `packages/browser` ViewportManager (BI-02.4) | Not started | |
-| `packages/browser` DOMSnapshot / PageHandle (BI-02.5) | Not started | |
-| `packages/browser` integration tests + fixtures (BI-02.6) | Not started | |
-| **M0 exit criteria: all 6 pass** | Not started | |
+| Monorepo scaffold (root config files) | Complete | Turbo 2 uses `tasks` (not `pipeline`) — see Known Blockers |
+| `packages/shared` scaffold (BI-01.1) | Complete | |
+| `packages/shared` DTOs (BI-01.2) | Complete | 9 DTO families + config schema; zero Node built-ins (grep-verified) |
+| `packages/shared` error hierarchy (BI-01.3) | Complete | `ExtractionError` + 6 subclasses, `toDiagnostic()` |
+| `packages/shared` unit tests (BI-01.4) | Complete | 29 tests: error→diagnostic, fingerprint stability, type-level DTO checks |
+| `packages/browser` scaffold (BI-02.1) | Complete | |
+| `packages/browser` BrowserManager + pool (BI-02.2) | Complete | FIFO semaphore, health check, shared in-flight launch, drain/teardown |
+| `packages/browser` NavigationEngine + stabilization (BI-02.3) | Complete | RAF-gated mutation quiescence + fonts/readyState gates, 5s soft deadline |
+| `packages/browser` ViewportManager (BI-02.4) | Complete | desktop/tablet/mobile built-ins; context-time emulation via `acquire(profile)` |
+| `packages/browser` DOMSnapshot / PageHandle (BI-02.5) | Complete | Single-round-trip above-fold walk, style allow-list, 2dp geometry epsilon |
+| `packages/browser` integration tests + fixtures (BI-02.6) | Complete | 18 tests vs real Chromium; fixtures static/async/mobile |
+| **M0 exit criteria: all 6 pass** | Complete | install/build/typecheck 0; browser tests green; no shared Node imports; mobile profile verified in-page; async stabilization verified |
 
 ### M1 — CSSOM Extraction MVP
 
@@ -129,12 +111,15 @@ Execute in this order:
 | Date | Agent/Person | Work Done | Status After |
 |---|---|---|---|
 | 2026-07-11 | Planning session | Created `IMPLEMENTATION_PLAN.md`, `AGENT_IMPL_BRIEF.md`, `IMPL_STATUS.md` | Pre-M0, no code |
+| 2026-07-11 | Implementation agent | M0 complete: root scaffold (pnpm/turbo/tsconfig/vitest), `packages/shared` (DTOs, error hierarchy, 29 unit tests), `packages/browser` (BrowserManager pool, NavigationEngine + Stability Window, ViewportManager, DOMSnapshot, PageHandle; 18 tests incl. real-Chromium integration), 3 HTML fixtures | M0 Complete; M1 not started |
 
 ---
 
 ## Known Blockers / Issues
 
-*None currently.*
+- **Doc divergence — `turbo.json` key:** `AGENT_IMPL_BRIEF.md §6 Step 1` shows a Turbo 1.x `"pipeline"` key, but the canonical stack pins Turbo 2.x, which requires `"tasks"`. Implemented with `"tasks"`. Brief sample should be corrected by the doc owner.
+- **Doc divergence — built-in viewport profiles:** `AGENT_IMPL_BRIEF.md` specifies desktop 1280×800 / tablet 768×1024 / mobile 375×812, while `docs/design/105-Viewport-Manager.md §8.1` shows Mobile 375×667 / Desktop 1920×1080. Implemented per the brief (its M0 exit checklist tests reference these values). Raise with project owner which set is canonical.
+- **`ViewportProfile` naming:** the brief's shared DTO list names `ViewportProfile` with a `foldOffset` field; design doc 105 models a `DeviceProfile` (with `customFoldOffsetPx`) wrapped by a `ViewportProfile` id. M0 implements the brief's flat `ViewportProfile` carrying all 105 emulation fields + `foldOffset`; the id-wrapper split can be layered in M3 (multi-viewport merge) without breaking downstream consumers.
 
 ---
 

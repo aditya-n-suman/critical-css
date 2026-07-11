@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mobile fixture</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      .desktop-nav { height: 60px; background: #333; color: #fff; padding: 8px; }
+      .mobile-menu-button { display: none; background: #06a; color: #fff; padding: 12px; }
+      main { padding: 16px; }
+      /* Desktop nav hidden on mobile-width viewports */
+      @media (max-width: 600px) {
+        .desktop-nav { display: none; }
+        .mobile-menu-button { display: block; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="desktop-nav" id="desktop-nav">Desktop navigation</nav>
+    <button class="mobile-menu-button" id="mobile-menu">Menu</button>
+    <main>
+      <h1>Responsive page</h1>
+      <p>Layout switches at 600px.</p>
+    </main>
+  </body>
+</html>

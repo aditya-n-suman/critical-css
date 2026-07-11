@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Static fixture</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      .hero { height: 300px; background: #123456; color: #fff; padding: 16px; }
+      .hero h1 { font-size: 32px; margin: 0; }
+      .subtitle { color: #a0c0e0; }
+      .spacer { height: 2000px; background: linear-gradient(#eee, #ccc); }
+      .footer { height: 200px; background: #222; color: #eee; padding: 24px; }
+      .hidden-el { display: none; }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <h1 id="title">Above the fold</h1>
+      <p class="subtitle">Visible hero content</p>
+      <span class="hidden-el" id="hidden">display:none element</span>
+    </header>
+    <div class="spacer"></div>
+    <footer class="footer" id="below-fold">
+      <p>Below-fold footer content</p>
+    </footer>
+  </body>
+</html>
