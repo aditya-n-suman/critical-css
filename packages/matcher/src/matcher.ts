@@ -12,10 +12,14 @@
  */
 
 import type { PageHandle } from '@critical-css/browser'
+import { atRuleChainOf } from '@critical-css/collector'
 import type { CollectedDom, CssomRuleList, RuleNode } from '@critical-css/collector'
 import { CCSS_ID_ATTRIBUTE, compareRuleIndexPaths } from '@critical-css/shared'
 import type { Diagnostic } from '@critical-css/shared'
 import { containsDynamicPseudoClass, extractBaseSelector, splitSelectorList } from './selector-normalize.js'
+
+export type { AtRuleCondition } from '@critical-css/shared'
+import type { AtRuleCondition } from '@critical-css/shared'
 
 export interface CssomRuleMatch {
   /** Join keys carried through unchanged (016 §11). */
@@ -28,7 +32,7 @@ export interface CssomRuleMatch {
   readonly matchedNodeIds: readonly number[]
   readonly declarationText: string
   /** Enclosing at-rule condition chain, outermost first (from the rule tree). */
-  readonly atRuleChain: readonly string[]
+  readonly atRuleChain: readonly AtRuleCondition[]
 }
 
 export interface MatchedRuleSet {
@@ -42,6 +46,8 @@ export interface MatchedRuleSet {
 interface MatchPayload {
   readonly idAttribute: string
   readonly selectors: readonly string[]
+  /** Restrict probing to these nodeIds (the Visibility Engine's matchable set). */
+  readonly allowedNodeIds: readonly number[] | null
 }
 
 interface ProbeResult {
@@ -60,11 +66,14 @@ interface InPageMatchResult {
  * Results are returned in payload order — index i corresponds to selectors[i]. */
 function matchProbesInPage(payload: MatchPayload): InPageMatchResult {
   const elements = document.querySelectorAll(`[${payload.idAttribute}]`)
+  const allowed = payload.allowedNodeIds !== null ? new Set(payload.allowedNodeIds) : null
   // Hoist the (element, nodeId) pairs once — not per probe.
   const entries: Array<{ el: Element; nodeId: number }> = []
   for (let i = 0; i < elements.length; i++) {
     const el = elements[i] as Element
-    entries.push({ el, nodeId: Number(el.getAttribute(payload.idAttribute)) })
+    const nodeId = Number(el.getAttribute(payload.idAttribute))
+    if (allowed !== null && !allowed.has(nodeId)) continue
+    entries.push({ el, nodeId })
   }
   const results = payload.selectors.map((selector): ProbeResult => {
     try {
@@ -86,32 +95,6 @@ function matchProbesInPage(payload: MatchPayload): InPageMatchResult {
   return { stampedElementCount: entries.length, results }
 }
 
-/** At-rule wrapper prefixes for grouping-rule kinds (302 §8.4 chain walk). */
-const AT_RULE_PREFIX: Readonly<Partial<Record<RuleNode['ruleType'], string>>> = {
-  media: '@media',
-  supports: '@supports',
-  container: '@container',
-  'layer-block': '@layer',
-}
-
-/** Builds the enclosing at-rule condition chain for a rule, outermost first. */
-function atRuleChainOf(rule: RuleNode, rulesById: ReadonlyMap<number, RuleNode>): string[] {
-  const chain: string[] = []
-  let parentId = rule.parentRuleId
-  while (parentId !== null) {
-    const parent = rulesById.get(parentId)
-    if (parent === undefined) break
-    const prefix = AT_RULE_PREFIX[parent.ruleType]
-    // Anonymous @layer blocks have an empty name: emit the bare at-keyword.
-    if (prefix !== undefined && parent.conditionText !== null) {
-      chain.unshift(
-        parent.conditionText.length > 0 ? `${prefix} ${parent.conditionText}` : prefix,
-      )
-    }
-    parentId = parent.parentRuleId
-  }
-  return chain
-}
 
 export class SelectorMatcher {
   /**
@@ -123,6 +106,8 @@ export class SelectorMatcher {
     dom: CollectedDom,
     cssom: CssomRuleList,
     viewportProfileId: string,
+    /** Visibility Engine's matchable set; `null` = probe every stamped node. */
+    allowedNodeIds: readonly number[] | null = null,
   ): Promise<MatchedRuleSet> {
     const diagnostics: Diagnostic[] = []
 
@@ -184,6 +169,7 @@ export class SelectorMatcher {
       const inPage = await handle.evaluate(matchProbesInPage, {
         idAttribute: CCSS_ID_ATTRIBUTE,
         selectors: pending.map((p) => extractBaseSelector(p.branch).baseSelector),
+        allowedNodeIds,
       })
       stampedElementCount = inPage.stampedElementCount
       results = inPage.results

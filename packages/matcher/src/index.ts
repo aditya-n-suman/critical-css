@@ -6,6 +6,6 @@
  */
 
 export { SelectorMatcher } from './matcher.js'
-export type { MatchedRuleSet, CssomRuleMatch } from './matcher.js'
+export type { MatchedRuleSet, CssomRuleMatch, AtRuleCondition } from './matcher.js'
 export { splitSelectorList, extractBaseSelector, containsDynamicPseudoClass } from './selector-normalize.js'
 export type { BaseSelectorExtraction } from './selector-normalize.js'
