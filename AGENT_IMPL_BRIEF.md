@@ -240,11 +240,11 @@ packages:
 }
 ```
 
-**`turbo.json`**
+**`turbo.json`** (Turbo 2.x uses `tasks`, not the 1.x `pipeline` key)
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "test": { "dependsOn": ["build"], "outputs": [] },
     "typecheck": { "dependsOn": ["^build"], "outputs": [] },
@@ -280,7 +280,7 @@ After creating these, run `pnpm install`. It must succeed before any package wor
 DTOs (`src/dtos/`):
 - `ExtractionResult` — the final output shape: CSS string + diagnostics + matched rule set + timing
 - `Diagnostic` — structured log/error entry: severity, code, message, source location, context
-- `ViewportProfile` — width, height, deviceScaleFactor, isMobile, userAgent, name
+- `ViewportProfile` — the full `DeviceProfile` emulation contract from `docs/design/105 §8.1` flattened onto one DTO: name, width, height, deviceScaleFactor, isMobile, hasTouch, userAgent, colorScheme, reducedMotion, forcedColors, foldOffset (105's `customFoldOffsetPx`; replaces — never offsets — the default fold). 105's `viewportProfileId` wrapper is layered on in M3 (multi-viewport merge)
 - `MatchedRule` — the CSS rule text + selector + specificity + source stylesheet + origin
 - `DependencyNode` — a CSS dependency (variable/keyframe/font/layer/etc.) with type + value + dependents
 - `CacheFingerprint` — hash of: HTML content, CSS asset URLs+ETags, viewport profile, extraction mode
@@ -340,7 +340,7 @@ Error hierarchy (`src/errors/`):
 
 `ViewportManager` (`src/viewport/`):
 - `DeviceProfile` type re-exported from `@critical-css/shared`
-- Built-in profiles: `desktop` (1280×800), `tablet` (768×1024), `mobile` (375×812, isMobile: true)
+- Built-in profiles per `docs/design/105-Viewport-Manager.md §8.1` (the design authority): `desktop` (1920×1080, DPR 1), `tablet` (768×1024, DPR 2, isMobile: true), `mobile` (375×667, DPR 2, isMobile: true)
 - `applyProfile(handle, profile): Promise<void>` — applies viewport + user agent to page context
 - `defaultProfile(): DeviceProfile` — returns desktop
 
