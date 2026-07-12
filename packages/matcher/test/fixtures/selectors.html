@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Selector surface fixture</title>
+    <style>
+      body { margin: 0; }
+      /* combinators */
+      .card > a { color: blue; }
+      .card ~ .sibling { color: teal; }
+      h1 + p { margin-top: 0; }
+      /* :is() / :where() */
+      :is(.card, .panel) .label { font-weight: bold; }
+      :where(.card) .hint { opacity: 0.5; }
+      /* attribute selectors */
+      [data-role="cta"] { background: gold; }
+      /* comma list — one matching branch, one not */
+      .card, .never-present { border: 1px solid; }
+      /* pseudo-element on matching host */
+      .card::before { content: "*"; }
+      /* dynamic pseudo-class — excluded by design at snapshot time */
+      .card:hover { outline: 2px solid red; }
+      /* non-matching rule */
+      .absent-everywhere { color: purple; }
+    </style>
+  </head>
+  <body>
+    <h1>Title</h1>
+    <p>Intro</p>
+    <div class="card">
+      <a href="#">link</a>
+      <span class="label">label</span>
+      <span class="hint">hint</span>
+    </div>
+    <div class="sibling">sibling</div>
+    <button data-role="cta">Go</button>
+  </body>
+</html>
