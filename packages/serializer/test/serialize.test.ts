@@ -51,12 +51,12 @@ describe('wrapper reconstruction (601 §8.3)', () => {
     const plain = rule({ selectorText: '.plain', ruleIndex: [0] })
     const m1 = rule({
       selectorText: '.m1',
-      atRuleChain: ['@media (max-width: 600px)'],
+      atRuleChain: [{ kind: 'media', conditionText: '(max-width: 600px)' }],
       ruleIndex: [1, 0],
     })
     const m2 = rule({
       selectorText: '.m2',
-      atRuleChain: ['@media (max-width: 600px)'],
+      atRuleChain: [{ kind: 'media', conditionText: '(max-width: 600px)' }],
       ruleIndex: [1, 1],
     })
     const css = serialize({ rules: [plain, m1, m2], dependencyManifest: [] }).css
@@ -81,7 +81,10 @@ describe('wrapper reconstruction (601 §8.3)', () => {
   it('preserves nested wrapper chains in order, never hoisted', () => {
     const nested = rule({
       selectorText: '.deep',
-      atRuleChain: ['@media (min-width: 600px)', '@supports (display: grid)'],
+      atRuleChain: [
+        { kind: 'media', conditionText: '(min-width: 600px)' },
+        { kind: 'supports', conditionText: '(display: grid)' },
+      ],
       ruleIndex: [0, 0, 0],
     })
     const css = serialize({ rules: [nested], dependencyManifest: [] }).css
@@ -105,7 +108,7 @@ describe('determinism (600 §8.2, INV-3)', () => {
     const rules = [
       rule({ selectorText: '.b', ruleIndex: [1] }),
       rule({ selectorText: '.a', ruleIndex: [0] }),
-      rule({ selectorText: '.m', atRuleChain: ['@media screen'], ruleIndex: [2, 0] }),
+      rule({ selectorText: '.m', atRuleChain: [{ kind: 'media', conditionText: 'screen' }], ruleIndex: [2, 0] }),
     ]
     const first = serialize({ rules, dependencyManifest: [] }).css
     const second = serialize({ rules, dependencyManifest: [] }).css
