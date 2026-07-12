@@ -1,0 +1,25 @@
+{
+  "name": "@critical-css/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "critical-css-engine": "./dist/main.js" },
+  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "extract": "node dist/main.js extract"
+  },
+  "dependencies": {
+    "@critical-css/browser": "workspace:*",
+    "@critical-css/collector": "workspace:*",
+    "@critical-css/matcher": "workspace:*",
+    "@critical-css/serializer": "workspace:*",
+    "@critical-css/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
+  }
+}

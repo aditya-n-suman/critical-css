@@ -1,0 +1,12 @@
+body {
+  margin: 0px; font-family: sans-serif;
+}
+.shell {
+  height: 400px; background: rgb(250, 250, 250); padding: 16px;
+}
+.late {
+  background: rgb(0, 170, 102); color: rgb(255, 255, 255); padding: 12px;
+}
+.spacer {
+  height: 1500px;
+}
