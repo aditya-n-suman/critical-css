@@ -112,7 +112,7 @@ describe('packages/browser M0 integration', () => {
     try {
       await handle.navigate(fixtureUrl('static'))
       const snapshot = await handle.captureSnapshot()
-      expect(snapshot.foldPx).toBe(800)
+      expect(snapshot.foldPx).toBe(1080)
       const tags = snapshot.nodes.map((n) => `${n.tagName}#${n.attributes['id'] ?? ''}`)
       expect(tags).toContain('H1#title')
       expect(tags).not.toContain('FOOTER#below-fold')

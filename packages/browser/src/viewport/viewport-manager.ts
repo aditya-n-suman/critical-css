@@ -12,12 +12,12 @@ const MOBILE_UA =
 const TABLET_UA =
   'Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
 
-/** Built-in profiles, per AGENT_IMPL_BRIEF M0 scope. */
+/** Built-in profiles, per docs/design/105-Viewport-Manager.md §8.1 (design authority). */
 export const BUILT_IN_PROFILES: Readonly<Record<'desktop' | 'tablet' | 'mobile', ViewportProfile>> = {
   desktop: {
     name: 'desktop',
-    width: 1280,
-    height: 800,
+    width: 1920,
+    height: 1080,
     deviceScaleFactor: 1,
     isMobile: false,
     hasTouch: false,
@@ -43,7 +43,7 @@ export const BUILT_IN_PROFILES: Readonly<Record<'desktop' | 'tablet' | 'mobile',
   mobile: {
     name: 'mobile',
     width: 375,
-    height: 812,
+    height: 667,
     deviceScaleFactor: 2,
     isMobile: true,
     hasTouch: true,

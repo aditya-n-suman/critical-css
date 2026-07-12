@@ -10,7 +10,7 @@ see only the `PageHandle` abstraction.
 |---|---|---|
 | `BrowserManager` | Pool of isolated browser contexts: `acquire(profile?)` / `release(handle)` / `teardown()`, default ceiling 2, health-checked handles, shared in-flight launch, leak-free teardown | 102-Browser-Pool |
 | `NavigationEngine` | `navigate(handle, url, options)` — `domcontentloaded`/`networkidle` wait + Stability Window Algorithm (RAF-gated mutation quiescence, fonts gate, readyState gate, 5s deadline). Throws `NavigationTimeoutError` on unreachable targets | 103-Navigation-Engine, 104-Rendering-Stabilization |
-| `ViewportManager`, `BUILT_IN_PROFILES` | `desktop` 1280×800, `tablet` 768×1024, `mobile` 375×812 (isMobile+touch); `applyProfile(handle, profile)`, `defaultProfile()` | 105-Viewport-Manager |
+| `ViewportManager`, `BUILT_IN_PROFILES` | `desktop` 1920×1080 (DPR 1), `tablet` 768×1024 (DPR 2), `mobile` 375×667 (DPR 2, isMobile+touch); `applyProfile(handle, profile)`, `defaultProfile()` | 105-Viewport-Manager §8.1 |
 | `DOMSnapshot` | `capture(handle)` → above-fold `DOMSnapshotResult` in one in-page `evaluate()` round trip; respects `ViewportProfile.foldOffset` (default `window.innerHeight`) | 106-DOM-Snapshot |
 | `PageHandle` | Opaque page handle: `navigate() / evaluate() / applyViewport() / captureSnapshot() / url()` — raw Playwright never escapes | 100-Browser-Abstraction |
 

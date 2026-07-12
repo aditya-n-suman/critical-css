@@ -14,11 +14,11 @@ describe('buildLaunchArgs (101 §8.8)', () => {
   })
 })
 
-describe('ViewportManager built-in profiles (AGENT_IMPL_BRIEF M0)', () => {
-  it('ships desktop 1280×800, tablet 768×1024, mobile 375×812', () => {
-    expect(BUILT_IN_PROFILES.desktop).toMatchObject({ width: 1280, height: 800, isMobile: false })
-    expect(BUILT_IN_PROFILES.tablet).toMatchObject({ width: 768, height: 1024 })
-    expect(BUILT_IN_PROFILES.mobile).toMatchObject({ width: 375, height: 812, isMobile: true, hasTouch: true })
+describe('ViewportManager built-in profiles (105-Viewport-Manager §8.1)', () => {
+  it('ships desktop 1920×1080, tablet 768×1024, mobile 375×667', () => {
+    expect(BUILT_IN_PROFILES.desktop).toMatchObject({ width: 1920, height: 1080, deviceScaleFactor: 1, isMobile: false })
+    expect(BUILT_IN_PROFILES.tablet).toMatchObject({ width: 768, height: 1024, deviceScaleFactor: 2 })
+    expect(BUILT_IN_PROFILES.mobile).toMatchObject({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
   })
 
   it('defaultProfile() is desktop', () => {
