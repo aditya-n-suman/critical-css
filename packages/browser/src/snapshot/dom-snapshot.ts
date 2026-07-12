@@ -1,6 +1,7 @@
 /**
- * DOMSnapshot — eager, single-round-trip above-fold DOM capture
- * (docs/design/106-DOM-Snapshot.md, BI-02.5 / M0 scope).
+ * DOMSnapshot — eager, single-round-trip whole-tree DOM capture
+ * (docs/design/106-DOM-Snapshot.md §8.6: enumerate the entire reachable tree
+ * in one coherent instant; the Visibility Engine classifies host-side).
  *
  * Executes entirely in-page via one evaluate() call — no DOM parsing on the
  * Node side (ADR-0001). Geometry and allow-listed computed style are read in
@@ -12,7 +13,11 @@ import { getRaw } from '../internal/raw.js'
 import type { DOMSnapshotNode, DOMSnapshotResult } from '../types/dom-snapshot-result.js'
 import type { PageHandle } from '../types/page-handle.js'
 
-/** Fixed computed-style allow-list (106 §8.2) — never the full declaration. */
+/**
+ * Fixed computed-style allow-list (106 §8.2, extended per the Visibility
+ * Engine's requirements: 203 clip fields, 205 sticky offsets, 206 fixed
+ * containing-block predicate fields).
+ */
 const STYLE_ALLOW_LIST = [
   'display',
   'visibility',
@@ -25,6 +30,16 @@ const STYLE_ALLOW_LIST = [
   'content-visibility',
   'contain',
   'z-index',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'clip-path',
+  'clip',
+  'filter',
+  'backdrop-filter',
+  'perspective',
+  'will-change',
 ] as const
 
 interface WalkConfig {
@@ -38,19 +53,20 @@ interface WalkResult {
   foldPx: number
   viewportWidth: number
   viewportHeight: number
+  scrollX: number
+  scrollY: number
   nodes: DOMSnapshotNode[]
 }
 
 /** Runs in-page. Single synchronous pass — one coherent instant (106 §8.6). */
-function captureAboveFold(cfg: WalkConfig): WalkResult {
+function captureDomSnapshot(cfg: WalkConfig): WalkResult {
   const foldPx = cfg.foldPx ?? window.innerHeight
   const nodes: DOMSnapshotNode[] = []
   let nodeIdCounter = 0
   const round = (n: number): number => Math.round(n * 100) / 100
 
   // Clear every stale correlation attribute (previous captures on this page,
-  // or page-authored collisions) — nodeIds are only unique within ONE
-  // capture, and the matcher resolves `[data-ccss-id]` globally.
+  // or page-authored collisions) — nodeIds are only unique within ONE capture.
   const stale = document.querySelectorAll(`[${cfg.idAttribute}]`)
   for (let i = 0; i < stale.length; i++) {
     ;(stale[i] as Element).removeAttribute(cfg.idAttribute)
@@ -58,70 +74,59 @@ function captureAboveFold(cfg: WalkConfig): WalkResult {
 
   const visit = (element: Element, parentNodeId: number | null): void => {
     const rect = element.getBoundingClientRect()
-    let aboveFold = rect.top < foldPx && rect.bottom > 0
-    // display:none elements collapse to 0×0 at (0,0). Capture them (their
-    // rules can be extraction-relevant; completeness bias, Principle 3) —
-    // but only genuinely display:none elements inside <body>, not the whole
-    // non-rendered <head> subtree or arbitrary zero-area elements.
-    if (!aboveFold && rect.width === 0 && rect.height === 0 && rect.top < foldPx) {
-      if (document.body !== null && document.body.contains(element)) {
-        aboveFold = getComputedStyle(element).display === 'none'
-      }
-    }
-    let nodeId: number | null = null
+    const nodeId = nodeIdCounter
+    nodeIdCounter += 1
 
-    if (aboveFold) {
-      nodeId = nodeIdCounter
-      nodeIdCounter += 1
-      const style = getComputedStyle(element)
-      const computedStyles: Record<string, string> = {}
-      for (const prop of cfg.styleAllowList) {
-        computedStyles[prop] = style.getPropertyValue(prop)
-      }
-      const attributes: Record<string, string> = {}
-      const attrs = element.attributes
-      for (let i = 0; i < attrs.length; i++) {
-        const attr = attrs[i] as Attr
-        // The engine-injected correlation attribute is never part of the
-        // captured snapshot (it would break determinism across runs).
-        if (attr.name === cfg.idAttribute) continue
-        attributes[attr.name] = attr.value
-      }
-      // Stable node identity for later batched selector matching
-      // (ADR-0001: re-resolve nodes via stable identifiers, never JSHandles).
-      element.setAttribute(cfg.idAttribute, String(nodeId))
-      const visible =
-        computedStyles['display'] !== 'none' &&
-        computedStyles['visibility'] !== 'hidden' &&
-        computedStyles['visibility'] !== 'collapse' &&
-        rect.width > 0 &&
-        rect.height > 0
-      const classList: string[] = []
-      for (let i = 0; i < element.classList.length; i++) {
-        classList.push(element.classList[i] as string)
-      }
-      nodes.push({
-        nodeId,
-        parentNodeId,
-        tagName: element.tagName,
-        classList,
-        attributes,
-        boundingRect: {
-          x: round(rect.x),
-          y: round(rect.y),
-          width: round(rect.width),
-          height: round(rect.height),
-        },
-        visible,
-        computedStyles,
-      })
+    const style = getComputedStyle(element)
+    const computedStyles: Record<string, string> = {}
+    for (const prop of cfg.styleAllowList) {
+      computedStyles[prop] = style.getPropertyValue(prop)
     }
+    const attributes: Record<string, string> = {}
+    const attrs = element.attributes
+    for (let i = 0; i < attrs.length; i++) {
+      const attr = attrs[i] as Attr
+      // The engine-injected correlation attribute is never part of the
+      // captured snapshot (it would break determinism across runs).
+      if (attr.name === cfg.idAttribute) continue
+      attributes[attr.name] = attr.value
+    }
+    // Stable node identity for later batched selector matching
+    // (ADR-0001: re-resolve nodes via stable identifiers, never JSHandles).
+    element.setAttribute(cfg.idAttribute, String(nodeId))
 
-    // Children are visited even when the parent is below-fold: a below-fold
-    // (e.g. absolutely positioned) ancestor can still have above-fold children.
+    const visible =
+      computedStyles['display'] !== 'none' &&
+      computedStyles['visibility'] !== 'hidden' &&
+      computedStyles['visibility'] !== 'collapse' &&
+      rect.width > 0 &&
+      rect.height > 0
+    const classList: string[] = []
+    for (let i = 0; i < element.classList.length; i++) {
+      classList.push(element.classList[i] as string)
+    }
+    nodes.push({
+      nodeId,
+      parentNodeId,
+      tagName: element.tagName,
+      classList,
+      attributes,
+      boundingRect: {
+        x: round(rect.x),
+        y: round(rect.y),
+        width: round(rect.width),
+        height: round(rect.height),
+      },
+      visible,
+      // display:contents boxes carry NO positional info (201 §11) — explicit
+      // marker, never inferred from box shape by consumers.
+      isDisplayContents: computedStyles['display'] === 'contents',
+      computedStyles,
+    })
+
     const children = element.children
     for (let i = 0; i < children.length; i++) {
-      visit(children[i] as Element, nodeId ?? parentNodeId)
+      visit(children[i] as Element, nodeId)
     }
   }
 
@@ -130,6 +135,8 @@ function captureAboveFold(cfg: WalkConfig): WalkResult {
     foldPx,
     viewportWidth: window.innerWidth,
     viewportHeight: window.innerHeight,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
     nodes,
   }
 }
@@ -138,11 +145,9 @@ export class DOMSnapshot {
   async capture(handle: PageHandle): Promise<DOMSnapshotResult> {
     const raw = getRaw(handle)
     const profile = raw.appliedProfile
-    // Fold: ViewportProfile.foldOffset when set, else window.innerHeight —
-    // resolved in-page to keep capture a single round trip.
     const foldPx = profile !== null ? computeFold(profile) : null
 
-    const result = await raw.page.evaluate(captureAboveFold, {
+    const result = await raw.page.evaluate(captureDomSnapshot, {
       foldPx,
       styleAllowList: STYLE_ALLOW_LIST as readonly string[],
       idAttribute: CCSS_ID_ATTRIBUTE,
@@ -151,6 +156,8 @@ export class DOMSnapshot {
       foldPx: result.foldPx,
       viewportWidth: result.viewportWidth,
       viewportHeight: result.viewportHeight,
+      scrollX: result.scrollX,
+      scrollY: result.scrollY,
       capturedUrl: raw.page.url(),
       nodes: result.nodes,
     }

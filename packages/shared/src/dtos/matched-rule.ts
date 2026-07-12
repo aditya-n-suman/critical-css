@@ -37,6 +37,17 @@ export function compareRuleIndexPaths(a: readonly number[], b: readonly number[]
   return a.length - b.length
 }
 
+/**
+ * Structured at-rule wrapper condition (302 §8.4). The matcher records the
+ * chain as data; the serializer owns formatting — bare condition text stays
+ * available for M2+ media evaluation / dedup without any re-parse.
+ */
+export interface AtRuleCondition {
+  readonly kind: 'media' | 'supports' | 'container' | 'layer'
+  /** Verbatim condition text / layer name (may be empty for anonymous layers). */
+  readonly conditionText: string
+}
+
 export interface MatchedRule {
   /** Full serialized rule text as reported by the browser CSSOM (`cssText`). */
   readonly cssText: string

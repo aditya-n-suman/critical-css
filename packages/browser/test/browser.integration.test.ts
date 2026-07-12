@@ -107,20 +107,29 @@ describe('packages/browser M0 integration', () => {
     }
   })
 
-  it('DOMSnapshot captures above-fold nodes and excludes below-fold content', async () => {
+  it('DOMSnapshot eagerly captures the whole reachable tree with fold + scroll context', async () => {
     const handle = await manager.acquire(BUILT_IN_PROFILES.desktop)
     try {
       await handle.navigate(fixtureUrl('static'))
       const snapshot = await handle.captureSnapshot()
       expect(snapshot.foldPx).toBe(1080)
+      expect(snapshot.scrollX).toBe(0)
+      expect(snapshot.scrollY).toBe(0)
       const tags = snapshot.nodes.map((n) => `${n.tagName}#${n.attributes['id'] ?? ''}`)
       expect(tags).toContain('H1#title')
-      expect(tags).not.toContain('FOOTER#below-fold')
+      // Whole-tree capture (106 §8.6): below-fold nodes ARE captured; the
+      // Visibility Engine classifies them host-side.
+      expect(tags).toContain('FOOTER#below-fold')
+      const footer = snapshot.nodes.find((n) => n.attributes['id'] === 'below-fold')
+      expect(footer?.boundingRect.y).toBeGreaterThan(1080)
       const hidden = snapshot.nodes.find((n) => n.attributes['id'] === 'hidden')
       expect(hidden?.visible).toBe(false)
       const title = snapshot.nodes.find((n) => n.attributes['id'] === 'title')
       expect(title?.visible).toBe(true)
-      expect(title?.computedStyles['display']).toBeDefined()
+      // Extended allow-list fields present (203/205/206 requirements).
+      expect(title?.computedStyles['top']).toBeDefined()
+      expect(title?.computedStyles['clip-path']).toBeDefined()
+      expect(title?.isDisplayContents).toBe(false)
     } finally {
       await manager.release(handle)
     }

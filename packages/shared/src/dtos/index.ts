@@ -6,7 +6,7 @@ export type {
   ForcedColors,
 } from './viewport-profile.js'
 export { computeFold } from './viewport-profile.js'
-export type { MatchedRule, CascadeOrigin, Specificity } from './matched-rule.js'
+export type { MatchedRule, CascadeOrigin, Specificity, AtRuleCondition } from './matched-rule.js'
 export { CCSS_ID_ATTRIBUTE, compareRuleIndexPaths } from './matched-rule.js'
 export type { DependencyNode, DependencyNodeType } from './dependency-node.js'
 export type {
@@ -30,3 +30,13 @@ export type {
 export type { ExtractionResult, StageTiming } from './extraction-result.js'
 export type { PluginHookContext, PluginHookName } from './plugin-hook-context.js'
 export type { RouteManifestEntry } from './route-manifest-entry.js'
+export type {
+  VisibilityAnnotation,
+  VisibilityAnnotatedNodeSet,
+  VisibilityReasonCode,
+  VisibilityConfig,
+  OpacityMode,
+  StickyPolicy,
+  FixedTreatment,
+} from './visibility.js'
+export { DEFAULT_VISIBILITY_CONFIG } from './visibility.js'
