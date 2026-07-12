@@ -38,9 +38,15 @@ export interface RuleNode {
   readonly declarationText: string
   /**
    * Grouping condition, verbatim: `mediaText` for @media, `conditionText`
-   * for @supports/@container, layer name for @layer. Stored, not interpreted (M1).
+   * for @supports/@container, layer name(s) for @layer.
    */
   readonly conditionText: string | null
+  /**
+   * Browser-evaluated condition activity at capture time:
+   * `matchMedia().matches` for @media, `CSS.supports()` for @supports
+   * (303/304). `null` for rules without an evaluable condition.
+   */
+  readonly conditionActive: boolean | null
   /** Full raw cssText fallback, retained for `unknown` rules. */
   readonly rawCssText: string | null
 }

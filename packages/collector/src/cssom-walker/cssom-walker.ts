@@ -59,25 +59,51 @@ function walkCssomInPage(): InPageWalkResult {
     if (type === 'supports' || type === 'container')
       return (rule as CSSSupportsRule | CSSContainerRule).conditionText
     if (type === 'layer-block') return (rule as CSSLayerBlockRule).name
-    // `@layer a, b;` statement: capture the declared name order now — the
-    // LayerOrderRegistry that consumes it is M2 (305), but the fact must not
-    // be lost at collection time.
+    // `@layer a, b;` statement: declared name order feeds the LayerOrderRegistry.
     if (type === 'layer-statement') return (rule as CSSLayerStatementRule).nameList.join(', ')
+    // Names for the dependency resolver's registries (502/504/505).
+    if (type === 'keyframes') return (rule as CSSKeyframesRule).name
+    if (type === 'property' && typeof CSSPropertyRule !== 'undefined')
+      return (rule as CSSPropertyRule).name
+    if (type === 'counter-style' && typeof CSSCounterStyleRule !== 'undefined')
+      return (rule as CSSCounterStyleRule).name
     return null
   }
 
   const declarationTextOf = (rule: CSSRule, type: RuleType): string => {
-    if (type === 'style' || type === 'page' || type === 'font-face') {
-      return (rule as CSSStyleRule | CSSPageRule | CSSFontFaceRule).style.cssText
+    if (type === 'style' || type === 'page') {
+      return (rule as CSSStyleRule | CSSPageRule).style.cssText
     }
-    if (type === 'keyframes' || type === 'property' || type === 'counter-style' || type === 'unknown') {
+    // Dependency at-rules carry their FULL at-rule text — the serializer
+    // emits these verbatim at top level, so bare declarations would be
+    // invalid CSS (silently discarded by the browser).
+    if (
+      type === 'font-face' ||
+      type === 'keyframes' ||
+      type === 'property' ||
+      type === 'counter-style' ||
+      type === 'unknown'
+    ) {
       return rule.cssText
     }
     return ''
   }
 
-  for (let sheetIndex = 0; sheetIndex < document.styleSheets.length; sheetIndex++) {
-    const sheet = document.styleSheets[sheetIndex] as CSSStyleSheet
+  const conditionActiveOf = (rule: CSSRule, type: RuleType): boolean | null => {
+    try {
+      if (type === 'media') return window.matchMedia((rule as CSSMediaRule).media.mediaText).matches
+      if (type === 'supports') return CSS.supports((rule as CSSSupportsRule).conditionText)
+    } catch {
+      return null
+    }
+    return null
+  }
+
+  const walkSheet = (
+    sheet: CSSStyleSheet,
+    sheetIndex: number,
+    origin: 'link' | 'style' | 'import' | 'constructable',
+  ): void => {
     const diagnostics: CollectorDiagnosticRecord[] = []
     const rules: RuleNode[] = []
     let accessible = true
@@ -96,6 +122,10 @@ function walkCssomInPage(): InPageWalkResult {
 
     if (ruleList !== null) {
       let ruleIdCounter = 0
+      // @import cycle guard (306): hrefs along the active import chain.
+      const importChain = new Set<string>()
+      if (sheet.href !== null) importChain.add(sheet.href)
+
       const walkRuleList = (
         list: CSSRuleList,
         parentRuleId: number | null,
@@ -122,6 +152,7 @@ function walkCssomInPage(): InPageWalkResult {
               selectorText: type === 'style' ? (rule as CSSStyleRule).selectorText : null,
               declarationText: declarationTextOf(rule, type),
               conditionText: conditionTextOf(rule, type),
+              conditionActive: conditionActiveOf(rule, type),
               rawCssText: type === 'unknown' ? rule.cssText : null,
             }
           } catch (err) {
@@ -137,12 +168,14 @@ function walkCssomInPage(): InPageWalkResult {
           ids.push(ruleId)
 
           // Recurse into any nested CSSRuleList except keyframes (whose
-          // children are keyframe steps, not style rules). This covers
-          // known grouping rules AND future/unknown ones (@scope,
-          // @starting-style) — descendants of an unknown grouping rule must
-          // never be silently dropped; the unknown wrapper is diagnosed.
+          // children are keyframe steps, not style rules); unknown grouping
+          // rules (@scope, @starting-style) are walked with a diagnostic —
+          // descendants must never be silently dropped. CSS-nesting children
+          // of style rules ARE walked: their raw `&`-selectors reach the
+          // matcher and surface as UNSUPPORTED_SELECTOR diagnostics (loud)
+          // rather than vanishing (full nesting resolution is M3).
           const nested = (rule as CSSGroupingRule).cssRules as CSSRuleList | undefined
-          if (nested !== undefined && nested.length > 0 && type !== 'keyframes' && type !== 'style') {
+          if (nested !== undefined && nested.length > 0 && type !== 'keyframes') {
             if (type === 'unknown') {
               diagnostics.push({
                 code: 'UNKNOWN_GROUPING_RULE',
@@ -154,14 +187,41 @@ function walkCssomInPage(): InPageWalkResult {
             ;(node as { childRuleIds: readonly number[] }).childRuleIds = childIds
           }
 
-          // @import recursion is M2 (306) — surface the deferral loudly
-          // rather than silently dropping the imported sheet's rules.
+          // 306: recurse into @import-ed sheets. Imported rules are recorded
+          // under the importing sheet's record with the import rule's path as
+          // prefix — this preserves exact cascade position (imported rules
+          // sort where the @import statement sits).
           if (type === 'import') {
-            diagnostics.push({
-              code: 'IMPORT_RULE_DEFERRED',
-              message: `@import at ${path.join('.')} not walked (deferred to M2, docs/design/306); its rules are missing from extraction`,
-              href: (rule as CSSImportRule).href,
-            })
+            const importRule = rule as CSSImportRule
+            const importedSheet = importRule.styleSheet
+            const href = importRule.href
+            if (importedSheet === null) {
+              diagnostics.push({
+                code: 'IMPORT_SHEET_UNAVAILABLE',
+                message: `@import at ${path.join('.')} has no loaded stylesheet (load failure?)`,
+                href,
+              })
+            } else if (importedSheet.href !== null && importChain.has(importedSheet.href)) {
+              // Deterministic cycle break (508's spirit at the sheet level).
+              diagnostics.push({
+                code: 'CIRCULAR_IMPORT',
+                message: `@import cycle detected at ${path.join('.')} → ${importedSheet.href}; second occurrence not re-walked`,
+                href: importedSheet.href,
+              })
+            } else {
+              if (importedSheet.href !== null) importChain.add(importedSheet.href)
+              try {
+                const childIds = walkRuleList(importedSheet.cssRules, ruleId, path)
+                ;(node as { childRuleIds: readonly number[] }).childRuleIds = childIds
+              } catch (err) {
+                diagnostics.push({
+                  code: 'CROSS_ORIGIN_STYLESHEET_SKIPPED',
+                  message: `Imported stylesheet cssRules inaccessible (${err instanceof Error ? err.name : 'SecurityError'})`,
+                  href,
+                })
+              }
+              if (importedSheet.href !== null) importChain.delete(importedSheet.href)
+            }
           }
         }
         return ids
@@ -171,7 +231,7 @@ function walkCssomInPage(): InPageWalkResult {
 
     stylesheets.push({
       sourceStylesheetIndex: sheetIndex,
-      origin: classifyOrigin(sheet),
+      origin,
       href: sheet.href,
       disabled: sheet.disabled,
       accessible,
@@ -180,14 +240,18 @@ function walkCssomInPage(): InPageWalkResult {
     })
   }
 
-  // adoptedStyleSheets walking is M2 (307) — diagnose, never silently drop.
-  const adoptedCount = document.adoptedStyleSheets?.length ?? 0
-  if (adoptedCount > 0) {
-    walkDiagnostics.push({
-      code: 'ADOPTED_STYLESHEETS_DEFERRED',
-      message: `${adoptedCount} adopted (constructable) stylesheet(s) present but not walked (deferred to M2, docs/design/307)`,
-      href: null,
-    })
+  let sheetIndex = 0
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    const sheet = document.styleSheets[i] as CSSStyleSheet
+    walkSheet(sheet, sheetIndex, classifyOrigin(sheet))
+    sheetIndex += 1
+  }
+  // 307: adopted (constructable) stylesheets — enumerated explicitly, since
+  // document.styleSheets is not exhaustive (Principle 1 edge case).
+  const adopted = document.adoptedStyleSheets ?? []
+  for (const sheet of adopted) {
+    walkSheet(sheet, sheetIndex, 'constructable')
+    sheetIndex += 1
   }
 
   return { stylesheets, diagnostics: walkDiagnostics }

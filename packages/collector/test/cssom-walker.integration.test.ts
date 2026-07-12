@@ -146,4 +146,75 @@ describe('CssomWalker (real Chromium)', () => {
     expect(result.dom.snapshotId).toBe(result.cssom.snapshotId)
     expect(result.snapshotId).toBe(result.cssom.snapshotId)
   })
+
+  it('walks adopted (constructable) stylesheets explicitly (307)', async () => {
+    await handle.evaluate(() => {
+      const sheet = new CSSStyleSheet()
+      sheet.replaceSync('.adopted-rule { color: teal; }')
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]
+    }, undefined as never)
+    const { cssom } = await collect(handle)
+    const constructable = cssom.stylesheets.find((s) => s.origin === 'constructable')
+    expect(constructable).toBeDefined()
+    expect(constructable?.rules.some((r) => r.selectorText === '.adopted-rule')).toBe(true)
+  })
+
+  it('annotates @media/@supports condition activity at capture time (303/304)', async () => {
+    const { cssom } = await collect(handle)
+    const inline = cssom.stylesheets[1]
+    const media = inline?.rules.find((r) => r.ruleType === 'media')
+    // Desktop-width viewport: (max-width: 600px) is inactive.
+    expect(media?.conditionActive).toBe(false)
+    const supports = inline?.rules.find((r) => r.ruleType === 'supports')
+    expect(supports?.conditionActive).toBe(true)
+  })
+})
+
+describe('CssomWalker @import handling (306)', () => {
+  let manager: BrowserManager
+  let server: Server
+  let handle: PageHandle
+
+  beforeAll(async () => {
+    server = await startServer((url) => {
+      if (url === '/a.css') return { body: "@import url('/b.css');\n.from-a { color: red; }", type: 'text/css' }
+      if (url === '/b.css') return { body: "@import url('/a.css');\n.from-b { color: blue; }", type: 'text/css' }
+      if (url === '/') {
+        return {
+          type: 'text/html',
+          body: `<!doctype html><html><head><link rel="stylesheet" href="/a.css"></head><body><p class="from-a from-b">x</p></body></html>`,
+        }
+      }
+      return null
+    })
+    manager = new BrowserManager({ maxConcurrency: 1 })
+    handle = await manager.acquire()
+    await handle.navigate(`http://127.0.0.1:${port(server)}/`)
+  })
+
+  afterAll(async () => {
+    await manager.release(handle)
+    await manager.teardown()
+    server.close()
+  })
+
+  it('recurses circular @import chains exactly once, with a diagnostic — no hang', async () => {
+    const { cssom } = await collect(handle)
+    const sheet = cssom.stylesheets[0]
+    expect(sheet?.accessible).toBe(true)
+    const selectors = (sheet?.rules ?? []).filter((r) => r.ruleType === 'style').map((r) => r.selectorText)
+    expect(selectors).toContain('.from-a')
+    expect(selectors).toContain('.from-b')
+    // Imported rules carry the import rule's path prefix (cascade position).
+    const fromB = sheet?.rules.find((r) => r.selectorText === '.from-b')
+    expect(fromB?.ruleIndexPath.length).toBeGreaterThan(1)
+    // The cycle is broken deterministically — either by the walker's own
+    // href-chain guard (CIRCULAR_IMPORT) or upstream by the browser itself,
+    // which discards looping @import rules (styleSheet === null →
+    // IMPORT_SHEET_UNAVAILABLE). Both are loud; neither hangs.
+    const cycleBreak = (sheet?.diagnostics ?? []).find(
+      (d) => d.code === 'CIRCULAR_IMPORT' || d.code === 'IMPORT_SHEET_UNAVAILABLE',
+    )
+    expect(cycleBreak).toBeDefined()
+  })
 })
