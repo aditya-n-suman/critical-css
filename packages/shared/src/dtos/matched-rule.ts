@@ -15,6 +15,28 @@ export interface Specificity {
   readonly c: number
 }
 
+/**
+ * Engine-injected DOM correlation attribute: stamped during DOM snapshot
+ * capture, resolved by the selector matcher (ADR-0001 stable-identity rule).
+ * Both sides must reference this single constant — the coupling is a
+ * correctness invariant, not a naming convention.
+ */
+export const CCSS_ID_ATTRIBUTE = 'data-ccss-id'
+
+/**
+ * Lexicographic comparison of rule index paths — THE ordering primitive for
+ * rule identity `(stylesheetIndex, ruleIndexPath)` (1000 §10.2). Matcher and
+ * serializer must sort identically by construction; both import this.
+ */
+export function compareRuleIndexPaths(a: readonly number[], b: readonly number[]): number {
+  const len = Math.min(a.length, b.length)
+  for (let i = 0; i < len; i++) {
+    const diff = (a[i] as number) - (b[i] as number)
+    if (diff !== 0) return diff
+  }
+  return a.length - b.length
+}
+
 export interface MatchedRule {
   /** Full serialized rule text as reported by the browser CSSOM (`cssText`). */
   readonly cssText: string

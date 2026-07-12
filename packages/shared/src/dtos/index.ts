@@ -7,6 +7,7 @@ export type {
 } from './viewport-profile.js'
 export { computeFold } from './viewport-profile.js'
 export type { MatchedRule, CascadeOrigin, Specificity } from './matched-rule.js'
+export { CCSS_ID_ATTRIBUTE, compareRuleIndexPaths } from './matched-rule.js'
 export type { DependencyNode, DependencyNodeType } from './dependency-node.js'
 export type {
   CacheFingerprint,

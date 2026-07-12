@@ -48,11 +48,12 @@ interface MonitorConfig {
  */
 function installStabilizationMonitor(cfg: MonitorConfig): void {
   const w = window as unknown as Record<string, unknown>
-  if (w['__ccssStabilization'] !== undefined) {
-    ;(w['__ccssStabilization'] as { reset: () => void }).reset()
+  const existing = w['__ccssStabilization'] as { reset: () => void; isStopped: () => boolean } | undefined
+  if (existing !== undefined && !existing.isStopped()) {
+    existing.reset()
     return
   }
-  const state = { quietFrames: 0, dirty: false, fontsReady: false }
+  const state = { quietFrames: 0, dirty: false, fontsReady: false, stopped: false }
 
   const isRelevant = (m: MutationRecord): boolean => {
     const target = m.target instanceof Element ? m.target : null
@@ -95,6 +96,7 @@ function installStabilizationMonitor(cfg: MonitorConfig): void {
   })
 
   const tick = (): void => {
+    if (state.stopped) return
     if (state.dirty) {
       state.quietFrames = 0
       state.dirty = false
@@ -125,7 +127,22 @@ function installStabilizationMonitor(cfg: MonitorConfig): void {
       state.quietFrames = 0
       state.dirty = false
     },
+    // Stop the RAF loop + observer once stabilization concludes, so the
+    // monitor does not keep churning during snapshot/matching evaluates.
+    // A later stabilize() on the same page reinstalls from scratch.
+    stop: (): void => {
+      state.stopped = true
+      observer.disconnect()
+    },
+    isStopped: (): boolean => state.stopped,
   }
+}
+
+function stopStabilizationMonitor(): void {
+  const monitor = (window as unknown as Record<string, unknown>)['__ccssStabilization'] as
+    | { stop: () => void }
+    | undefined
+  monitor?.stop()
 }
 
 function readStabilizationMonitor(): StabilizationReading {
@@ -152,6 +169,10 @@ export class NavigationEngine {
       statusCode = response?.status() ?? null
     } catch (cause) {
       // Raw Playwright errors never escape the adapter boundary (101 §8.1).
+      // M1 note: every goto failure (DNS, refused, SSL, timeout) maps to
+      // NavigationTimeoutError per AGENT_IMPL_BRIEF's M0/M1 contract; 103's
+      // full NavigationError subtype taxonomy (dnsFailure/connectionRefused/
+      // redirectLoop/…) is M2 work — the true cause is preserved in `cause`.
       throw new NavigationTimeoutError(
         `Navigation to ${url} failed or timed out after ${Date.now() - start}ms`,
         { cause, source: { url }, context: { waitUntil, timeoutMs } },
@@ -208,6 +229,7 @@ export class NavigationEngine {
         lastReading.fontsReady &&
         lastReading.customReady
       if (stable) {
+        await raw.page.evaluate(stopStabilizationMonitor, undefined as never)
         return {
           stable: true,
           elapsedMs: Date.now() - start,
@@ -218,6 +240,7 @@ export class NavigationEngine {
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
     }
 
+    await raw.page.evaluate(stopStabilizationMonitor, undefined as never).catch(() => undefined)
     diagnostics.push({
       severity: 'warning',
       code: 'STABILIZATION_TIMEOUT',

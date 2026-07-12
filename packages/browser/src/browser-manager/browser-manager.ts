@@ -88,11 +88,19 @@ class PageHandleImpl implements PageHandle {
     return this.navigation.navigate(this, url, options)
   }
 
-  evaluate<TArgs, TResult>(fn: (args: TArgs) => TResult, args: TArgs): Promise<TResult> {
-    // Playwright's PageFunction generics (Unboxed<TArgs>) don't unify with the
-    // abstraction's plain-serializable contract (100 §8.2); the runtime shape
-    // is identical, so bridge the nominal gap explicitly.
-    return getRaw(this).page.evaluate(fn as never, args as never) as Promise<TResult>
+  async evaluate<TArgs, TResult>(fn: (args: TArgs) => TResult, args: TArgs): Promise<TResult> {
+    try {
+      // Playwright's PageFunction generics (Unboxed<TArgs>) don't unify with
+      // the abstraction's plain-serializable contract (100 §8.2); the runtime
+      // shape is identical, so bridge the nominal gap explicitly.
+      return (await getRaw(this).page.evaluate(fn as never, args as never)) as TResult
+    } catch (cause) {
+      // Raw Playwright errors never escape the adapter boundary (101 §8.1).
+      throw new ExtractionError('EVALUATION_FAILED', `In-page evaluation failed: ${cause instanceof Error ? cause.message : String(cause)}`, {
+        cause,
+        source: { url: getRaw(this).page.url() },
+      })
+    }
   }
 
   applyViewport(profile: ViewportProfile): Promise<void> {
