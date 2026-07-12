@@ -12,6 +12,8 @@
     { "path": "../../packages/browser" },
     { "path": "../../packages/collector" },
     { "path": "../../packages/matcher" },
+    { "path": "../../packages/dependency-graph" },
+    { "path": "../../packages/plugins" },
     { "path": "../../packages/serializer" }
   ],
   "include": ["src"]

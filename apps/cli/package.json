@@ -13,7 +13,9 @@
   "dependencies": {
     "@critical-css/browser": "workspace:*",
     "@critical-css/collector": "workspace:*",
+    "@critical-css/dependency-graph": "workspace:*",
     "@critical-css/matcher": "workspace:*",
+    "@critical-css/plugins": "workspace:*",
     "@critical-css/serializer": "workspace:*",
     "@critical-css/shared": "workspace:*"
   },

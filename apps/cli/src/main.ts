@@ -14,10 +14,12 @@ interface ParsedArgs {
   readonly url: string
   readonly viewport: 'desktop' | 'tablet' | 'mobile'
   readonly output: string | null
+  readonly minify: boolean
+  readonly format: 'raw-css' | 'inline-style' | 'json-envelope'
 }
 
 const USAGE =
-  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--output <path>]'
+  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--output <path>] [--minify] [--format raw-css|inline-style|json-envelope]'
 
 function parseArgs(argv: readonly string[]): ParsedArgs {
   const [command, ...rest] = argv
@@ -27,10 +29,22 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   let url: string | null = null
   let viewport: ParsedArgs['viewport'] = 'desktop'
   let output: string | null = null
+  let minify = false
+  let format: ParsedArgs['format'] = 'raw-css'
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i]
     const value = rest[i + 1]
     switch (flag) {
+      case '--minify':
+        minify = true
+        break
+      case '--format':
+        if (value !== 'raw-css' && value !== 'inline-style' && value !== 'json-envelope') {
+          throw new UsageError(`--format must be raw-css|inline-style|json-envelope\n${USAGE}`)
+        }
+        format = value
+        i += 1
+        break
       case '--url':
         if (value === undefined) throw new UsageError(`--url requires a value\n${USAGE}`)
         url = value
@@ -53,7 +67,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     }
   }
   if (url === null) throw new UsageError(`--url is required\n${USAGE}`)
-  return { url, viewport, output }
+  return { url, viewport, output, minify, format }
 }
 
 class UsageError extends Error {}
@@ -68,19 +82,24 @@ async function main(): Promise<number> {
   }
 
   try {
-    const outcome = await extract({ url: args.url, viewport: args.viewport })
+    const outcome = await extract({
+      url: args.url,
+      viewport: args.viewport,
+      minify: args.minify,
+      format: args.format,
+    })
     for (const diagnostic of outcome.diagnostics) {
       process.stderr.write(
         `[${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}\n`,
       )
     }
     process.stderr.write(
-      `extracted ${outcome.stats.matchedRules} rules from ${outcome.stats.aboveFoldNodes} above-fold nodes\n`,
+      `extracted ${outcome.stats.matchedRules} rules (+${outcome.stats.transitiveRules} transitive, ${outcome.stats.dependencies} dependencies) from ${outcome.stats.visibleNodes}/${outcome.stats.totalNodes} visible nodes\n`,
     )
     if (args.output !== null) {
-      await writeFile(args.output, outcome.css, 'utf8')
+      await writeFile(args.output, outcome.output, 'utf8')
     } else {
-      process.stdout.write(outcome.css)
+      process.stdout.write(outcome.output)
     }
     return 0
   } catch (err) {

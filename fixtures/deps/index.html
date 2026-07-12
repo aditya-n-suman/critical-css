@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dependency constructs fixture</title>
+    <style>
+      @layer base, overrides;
+      @property --accent {
+        syntax: '<color>';
+        inherits: true;
+        initial-value: #0066aa;
+      }
+      @counter-style dots {
+        system: cyclic;
+        symbols: '•';
+        suffix: ' ';
+      }
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      /* duplicate keyframes name — last-wins (502) */
+      @keyframes fade-in {
+        from { opacity: 0.5; }
+        to { opacity: 1; }
+      }
+      @font-face {
+        font-family: 'FixtureFont';
+        src: url('data:font/woff2;base64,d09GMgABAAAAAADcAAoAAAAAAggAAACWAAEAAAAAAAAAAAAA') format('woff2');
+      }
+      body { margin: 0; font-family: sans-serif; }
+      :root { --base: #123456; --chained: var(--base); }
+      @layer base {
+        .card { color: var(--chained); padding: 8px; }
+      }
+      @layer overrides {
+        .card { border: 1px solid var(--accent); }
+      }
+      .hero { animation: fade-in 1s ease-out; font-family: 'FixtureFont', sans-serif; height: 200px; }
+      .counted::before { content: counter(section, dots); }
+      /* deliberate variable cycle (--a ↔ --b) */
+      .cyc-a { --a: var(--b); }
+      .cyc-b { --b: var(--a); }
+      .uses-cycle { color: var(--a, red); }
+      .spacer { height: 2000px; }
+      .below { color: purple; }
+    </style>
+  </head>
+  <body>
+    <div class="hero">Hero</div>
+    <div class="card">Card</div>
+    <div class="counted">Counted</div>
+    <div class="cyc-a cyc-b uses-cycle">Cycle</div>
+    <div class="spacer"></div>
+    <div class="below">Below fold</div>
+  </body>
+</html>
