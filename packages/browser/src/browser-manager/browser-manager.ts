@@ -17,6 +17,7 @@ import { Semaphore } from '../internal/semaphore.js'
 import { NavigationEngine } from '../navigation/navigation-engine.js'
 import { DOMSnapshot } from '../snapshot/dom-snapshot.js'
 import type { DOMSnapshotResult } from '../types/dom-snapshot-result.js'
+import type { CoverageSession, RawCssCoverage } from '../coverage/coverage-session.js'
 import type { NavigateOptions, NavigationResult, PageHandle } from '../types/page-handle.js'
 import { ViewportManager } from '../viewport/viewport-manager.js'
 
@@ -111,9 +112,42 @@ class PageHandleImpl implements PageHandle {
     return this.snapshot.capture(this)
   }
 
+  async startCoverage(): Promise<CoverageSession> {
+    const raw = getRaw(this)
+    // Playwright's CSS coverage is its sanctioned CDP integration; present
+    // only on Chromium. Capability-gate rather than silently no-op (700 §8.5).
+    const coverage = (raw.page as unknown as { coverage?: PlaywrightCssCoverage }).coverage
+    if (raw.engine !== 'chromium' || coverage === undefined) {
+      throw new ExtractionError(
+        'CAPABILITY_UNAVAILABLE',
+        `CSS coverage requires Chromium; engine '${raw.engine}' does not support it`,
+        { context: { engine: raw.engine } },
+      )
+    }
+    await coverage.startCSSCoverage({ resetOnNavigation: false })
+    return {
+      stop: async (): Promise<RawCssCoverage> => {
+        const entries = await coverage.stopCSSCoverage()
+        return {
+          entries: entries.map((e) => ({
+            url: e.url,
+            text: e.text,
+            ranges: e.ranges.map((r) => ({ start: r.start, end: r.end })),
+          })),
+        }
+      },
+    }
+  }
+
   url(): string {
     return getRaw(this).page.url()
   }
+}
+
+/** Minimal shape of Playwright's Chromium `page.coverage` we depend on. */
+interface PlaywrightCssCoverage {
+  startCSSCoverage(options?: { resetOnNavigation?: boolean }): Promise<void>
+  stopCSSCoverage(): Promise<Array<{ url: string; text: string; ranges: Array<{ start: number; end: number }> }>>
 }
 
 export class BrowserManager {

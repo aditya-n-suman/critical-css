@@ -8,6 +8,7 @@
 
 import type { Diagnostic, StabilizationPolicy, ViewportProfile, WaitUntil } from '@critical-css/shared'
 import type { DOMSnapshotResult } from './dom-snapshot-result.js'
+import type { CoverageSession } from '../coverage/coverage-session.js'
 
 export interface NavigateOptions {
   /** Default `'domcontentloaded'` — the weakest signal; stabilization takes over (103 §8.5). */
@@ -45,6 +46,13 @@ export interface PageHandle {
   applyViewport(profile: ViewportProfile): Promise<void>
   /** Capture the above-fold DOM snapshot (106). */
   captureSnapshot(): Promise<DOMSnapshotResult>
+  /**
+   * Begin CSS coverage tracking. MUST be called before `navigate()` (700:
+   * render-blocking usage is lost otherwise). Throws an ExtractionError with
+   * code `CAPABILITY_UNAVAILABLE` on non-Chromium engines (100 §8.5) — never
+   * silently returns empty coverage.
+   */
+  startCoverage(): Promise<CoverageSession>
   /** Current page URL. */
   url(): string
 }

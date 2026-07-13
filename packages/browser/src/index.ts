@@ -19,4 +19,8 @@ export type {
   DOMSnapshotResult,
   DOMSnapshotNode,
   BoundingRect,
+  CoverageSession,
+  RawCssCoverage,
+  CssCoverageEntry,
+  CssCoverageRange,
 } from './types/index.js'

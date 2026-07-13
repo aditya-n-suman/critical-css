@@ -1,7 +1,10 @@
 node_modules/
 dist/
 .turbo/
-coverage/
+# NOTE: no blanket `coverage/` ignore — it collided with source dirs named
+# `coverage` (packages/coverage, packages/browser/src/coverage). If test-coverage
+# reporting is added, point it at a distinct dir (e.g. `.coverage/`) and ignore that.
+.coverage/
 *.log
 *.tsbuildinfo
 .DS_Store
