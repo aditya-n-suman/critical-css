@@ -8,10 +8,10 @@
 
 import { writeFile } from 'node:fs/promises'
 import { ExtractionError } from '@critical-css/shared'
+import type { SandboxPolicy } from '@critical-css/shared'
+import { ConfigError, isSandboxPolicy, isViewport, loadConfigFile } from './config.js'
+import type { CliConfig, Mode, ViewportName } from './config.js'
 import { extract } from './extract.js'
-
-type ViewportName = 'desktop' | 'tablet' | 'mobile'
-type Mode = 'cssom' | 'coverage' | 'hybrid'
 
 interface ParsedArgs {
   readonly url: string
@@ -21,26 +21,65 @@ interface ParsedArgs {
   readonly reportOutput: string | null
   readonly minify: boolean
   readonly format: 'raw-css' | 'inline-style' | 'json-envelope'
+  readonly sandboxPolicy: SandboxPolicy
 }
 
 const USAGE =
-  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--minify] [--format raw-css|inline-style|json-envelope]'
+  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--config <path>]'
 
-const isViewport = (v: string | undefined): v is ViewportName =>
-  v === 'desktop' || v === 'tablet' || v === 'mobile'
+/**
+ * Explicit opt-in only (101 §8.8) — CLI flag takes precedence, then the
+ * config file, then the `CRITICAL_CSS_SANDBOX_POLICY` env var (for CI setups
+ * that can't easily add args or a config file), falling back to Chromium's
+ * default sandbox (`'full'`).
+ */
+function envSandboxPolicy(): SandboxPolicy | undefined {
+  const fromEnv = process.env.CRITICAL_CSS_SANDBOX_POLICY
+  if (fromEnv === undefined) return undefined
+  if (!isSandboxPolicy(fromEnv)) {
+    throw new UsageError(
+      `CRITICAL_CSS_SANDBOX_POLICY must be full|ci-container|unsafe-no-sandbox, got: ${fromEnv}`,
+    )
+  }
+  return fromEnv
+}
 
-function parseArgs(argv: readonly string[]): ParsedArgs {
+/**
+ * Two-pass parse: a first pass finds only `--config` (it can appear anywhere
+ * in argv) so its values become the base that the second, full pass of CLI
+ * flags is layered on top of — CLI flag > config file > env > built-in
+ * default, field by field.
+ */
+async function findConfigFlag(argv: readonly string[]): Promise<CliConfig> {
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--config') {
+      const value = argv[i + 1]
+      if (value === undefined) throw new UsageError(`--config requires a value\n${USAGE}`)
+      try {
+        return await loadConfigFile(value)
+      } catch (err) {
+        if (err instanceof ConfigError) throw new UsageError(err.message)
+        throw err
+      }
+    }
+  }
+  return {}
+}
+
+async function parseArgs(argv: readonly string[]): Promise<ParsedArgs> {
   const [command, ...rest] = argv
   if (command !== 'extract') {
     throw new UsageError(`Unknown command: ${command ?? '(none)'}\n${USAGE}`)
   }
-  let url: string | null = null
-  let viewports: ViewportName[] = ['desktop']
-  let mode: Mode = 'cssom'
-  let output: string | null = null
-  let reportOutput: string | null = null
-  let minify = false
-  let format: ParsedArgs['format'] = 'raw-css'
+  const fileConfig = await findConfigFlag(rest)
+  let url: string | null = fileConfig.url ?? null
+  let viewports: ViewportName[] = [...(fileConfig.viewports ?? ['desktop'])]
+  let mode: Mode = fileConfig.mode ?? 'cssom'
+  let output: string | null = fileConfig.output ?? null
+  let reportOutput: string | null = fileConfig.report ?? null
+  let minify = fileConfig.minify ?? false
+  let format: ParsedArgs['format'] = fileConfig.format ?? 'raw-css'
+  let sandboxPolicy: SandboxPolicy = fileConfig.sandboxPolicy ?? envSandboxPolicy() ?? 'full'
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i]
     const value = rest[i + 1]
@@ -92,12 +131,24 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         reportOutput = value
         i += 1
         break
+      case '--sandbox-policy':
+        if (!isSandboxPolicy(value)) {
+          throw new UsageError(`--sandbox-policy must be full|ci-container|unsafe-no-sandbox\n${USAGE}`)
+        }
+        sandboxPolicy = value
+        i += 1
+        break
+      case '--config':
+        // Already consumed by findConfigFlag's pre-pass; skip its value here.
+        if (value === undefined) throw new UsageError(`--config requires a value\n${USAGE}`)
+        i += 1
+        break
       default:
         throw new UsageError(`Unknown flag: ${flag}\n${USAGE}`)
     }
   }
   if (url === null) throw new UsageError(`--url is required\n${USAGE}`)
-  return { url, viewports, mode, output, reportOutput, minify, format }
+  return { url, viewports, mode, output, reportOutput, minify, format, sandboxPolicy }
 }
 
 class UsageError extends Error {}
@@ -105,7 +156,7 @@ class UsageError extends Error {}
 async function main(): Promise<number> {
   let args: ParsedArgs
   try {
-    args = parseArgs(process.argv.slice(2))
+    args = await parseArgs(process.argv.slice(2))
   } catch (err) {
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     return 2
@@ -118,10 +169,12 @@ async function main(): Promise<number> {
       mode: args.mode,
       minify: args.minify,
       format: args.format,
+      sandboxPolicy: args.sandboxPolicy,
     })
     for (const diagnostic of outcome.diagnostics) {
+      const location = diagnostic.source?.url !== null && diagnostic.source?.url !== undefined ? ` (${diagnostic.source.url})` : ''
       process.stderr.write(
-        `[${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}\n`,
+        `[${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}${location}\n`,
       )
     }
     process.stderr.write(
@@ -144,6 +197,14 @@ async function main(): Promise<number> {
       process.stderr.write(`extraction failed — [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}\n`)
     } else {
       process.stderr.write(`extraction failed — ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}\n`)
+    }
+    // Fail-Fast Diagnostics (006 Principle 6): a wrapped launch/navigation
+    // failure is worthless without its real cause — surface the full chain
+    // rather than only the outer, generic message.
+    let cause: unknown = err instanceof Error ? err.cause : undefined
+    while (cause !== undefined) {
+      process.stderr.write(`  caused by: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}\n`)
+      cause = cause instanceof Error ? cause.cause : undefined
     }
     return 1
   }

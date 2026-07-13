@@ -8,6 +8,8 @@ critical-css-engine extract --url <url>
   [--mode cssom|coverage|hybrid] [--minify]
   [--format raw-css|inline-style|json-envelope]
   [--output <path>] [--report <path>]
+  [--sandbox-policy full|ci-container|unsafe-no-sandbox]
+  [--config <path>]
 ```
 
 - CSS payload → stdout (or `--output` file); diagnostics + stats → stderr.
@@ -22,7 +24,31 @@ critical-css-engine extract --url <url>
   synthetic width-band `@media`; rules matched in all viewports stay unconditional).
 - `--report <path>`: write the per-viewport report bundles (matched/unmatched/timing/contribution
   + dependency-graph) as JSON.
-- Programmatic API: `extract({ url, viewports, mode, minify, format, plugins })` from `@critical-css/cli`.
+- `--sandbox-policy` (101 §8.8): Chromium launch sandboxing. `full` (default) — no launch args,
+  requires user namespaces (fails with `BROWSER_ACQUISITION_FAILED` in some restrictive
+  containers). `ci-container` — adds `--disable-dev-shm-usage`, sandbox retained. `unsafe-no-sandbox`
+  — adds `--no-sandbox --disable-dev-shm-usage`; disables a security boundary, so it is never
+  auto-detected and must be requested explicitly (flag or `CRITICAL_CSS_SANDBOX_POLICY` env var,
+  flag wins). No effect on firefox/webkit engines.
+- Programmatic API: `extract({ url, viewports, mode, minify, format, plugins, sandboxPolicy })`
+  from `@critical-css/cli`.
+- `--config <path>` (010 §8.1, 011): a JSON file supplying defaults for any of `url`, `viewport`
+  (single, alias of `viewports`), `viewports`, `mode`, `output`, `report`, `minify`, `format`,
+  `sandboxPolicy`. Unknown keys or invalid values are a usage error (exit `2`), validated before
+  any browser launches. Precedence, most to least specific: **CLI flag > config file >
+  `CRITICAL_CSS_SANDBOX_POLICY` env var (sandboxPolicy only) > built-in default.** Example:
+  ```json
+  {
+    "url": "https://example.com/page",
+    "viewport": "mobile",
+    "mode": "cssom",
+    "minify": true
+  }
+  ```
+  ```
+  critical-css-engine extract --config critical-css.json --viewport desktop
+  ```
+  overrides the config's `mobile` with `desktop` for this one run; everything else comes from the file.
 
 Deferrals: route manifest / cache gate / `--compare-baseline` (M4); source maps (605);
 `apps/visualizer` (M5).

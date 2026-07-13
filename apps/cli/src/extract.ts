@@ -44,7 +44,14 @@ import {
   type ViewportBand,
 } from '@critical-css/serializer'
 import { DEFAULT_VISIBILITY_CONFIG, fnv1a64 } from '@critical-css/shared'
-import type { Diagnostic, ExtractionMode, StageTiming, ViewportProfile, VisibilityConfig } from '@critical-css/shared'
+import type {
+  Diagnostic,
+  ExtractionMode,
+  SandboxPolicy,
+  StageTiming,
+  ViewportProfile,
+  VisibilityConfig,
+} from '@critical-css/shared'
 
 const ENGINE_VERSION = '0.1.0'
 
@@ -60,6 +67,8 @@ export interface ExtractRequest {
   readonly minify?: boolean
   readonly format?: OutputFormat
   readonly plugins?: readonly Plugin<unknown>[]
+  /** Chromium sandbox launch policy (101 §8.8). Defaults to `'full'`. */
+  readonly sandboxPolicy?: SandboxPolicy
 }
 
 export interface ExtractOutcome {
@@ -417,7 +426,10 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
   const dispatcher = new PluginDispatcher(registry)
 
   const diagnostics: Diagnostic[] = [...registry.diagnostics]
-  const manager = new BrowserManager({ maxConcurrency: 1 })
+  const manager = new BrowserManager({
+    maxConcurrency: 1,
+    ...(request.sandboxPolicy !== undefined ? { sandboxPolicy: request.sandboxPolicy } : {}),
+  })
   const extractions: ViewportExtraction[] = []
   try {
     for (const profileName of viewports) {
