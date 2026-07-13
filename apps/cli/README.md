@@ -3,18 +3,29 @@
 CLI orchestration (AT-11, M1 MVP).
 
 ```
-critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--output <path>]
+critical-css-engine extract --url <url>
+  [--viewport desktop|tablet|mobile] [--viewports d,t,m]
+  [--mode cssom|coverage|hybrid] [--minify]
+  [--format raw-css|inline-style|json-envelope]
+  [--output <path>] [--report <path>]
 ```
 
 - CSS payload → stdout (or `--output` file); diagnostics + stats → stderr.
 - Exit codes: `0` success, `1` extraction failure (attributed diagnostic on stderr), `2` usage error.
-- Pipeline: `BrowserManager.acquire(profile)` → navigate + stabilize → `collect` (DOM + CSSOM)
-  → `SelectorMatcher.matchRules` → `serialize` → emit. Single-viewport runs the identical
-  merge/serialize path as multi-viewport (016 §12).
-- Programmatic API: `extract({ url, viewport })` from `@critical-css/cli` (REQ-400).
+- Pipeline (per viewport): `acquire(profile)` → [`startCoverage` if coverage/hybrid] →
+  navigate + stabilize → `collect` (DOM + CSSOM) → `classifyVisibility` →
+  `matchRules` / coverage → hybrid reconcile → `FixedPointResolver` → per-viewport rules.
+  Then `mergeViewports` across profiles → `serialize`. Six plugin hook seams dispatched in order.
+- `--mode`: `cssom` (default), `coverage` (CDP-only, no matcher), `hybrid` (composes both;
+  coverage upgrades/flags, never drops a CSSOM match). Coverage degrades to CSSOM on non-Chromium.
+- `--viewports d,t,m`: run each viewport independently and merge (viewport-specific rules get a
+  synthetic width-band `@media`; rules matched in all viewports stay unconditional).
+- `--report <path>`: write the per-viewport report bundles (matched/unmatched/timing/contribution
+  + dependency-graph) as JSON.
+- Programmatic API: `extract({ url, viewports, mode, minify, format, plugins })` from `@critical-css/cli`.
 
-M1 deferrals: route manifest, cache gate, plugin hook dispatch (no-op),
-`--compare-baseline`, minification (pass-through).
+Deferrals: route manifest / cache gate / `--compare-baseline` (M4); source maps (605);
+`apps/visualizer` (M5).
 
 ## Golden baseline
 

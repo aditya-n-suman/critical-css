@@ -1,17 +1,24 @@
 /**
- * Extraction pipeline orchestration (docs/tasks/011, M2):
- * BrowserManager → navigate → [visibility policy via plugins] → collect →
- * classifyVisibility → SelectorMatcher → FixedPointResolver → serialize,
- * with the six plugin hook seams dispatched in order (ADR-0004).
+ * Extraction pipeline orchestration (docs/tasks/011, M3).
+ *
+ * Per viewport: BrowserManager → [startCoverage if coverage/hybrid] →
+ * navigate → collect → classifyVisibility → matcher/coverage → hybrid
+ * reconcile → FixedPointResolver → per-viewport MergedRule[]. Then
+ * mergeViewports across profiles → serialize. Reporter builds the four M3
+ * reports from the first viewport's terminal outputs. Six plugin hook seams
+ * dispatched in order (ADR-0004).
  *
  * CSS payload is the ONLY thing that reaches stdout; diagnostics → stderr.
  */
 
 import { BrowserManager, BUILT_IN_PROFILES } from '@critical-css/browser'
+import type { PageHandle } from '@critical-css/browser'
 import { atRuleChainOf, classifyVisibility, collect, matchableNodeIds } from '@critical-css/collector'
-import { FixedPointResolver } from '@critical-css/dependency-graph'
+import type { CssomRuleList, RuleNode } from '@critical-css/collector'
+import { CoverageCollector } from '@critical-css/coverage'
+import { coverageOnlyRules, FixedPointResolver, reconcileHybrid } from '@critical-css/dependency-graph'
 import { SelectorMatcher } from '@critical-css/matcher'
-import type { CssomRuleMatch } from '@critical-css/matcher'
+import type { CssomRuleMatch, MatchedRuleSet } from '@critical-css/matcher'
 import {
   buildPluginRegistry,
   PluginDispatcher,
@@ -23,36 +30,64 @@ import {
   type BeforeSerializePatch,
   type Plugin,
 } from '@critical-css/plugins'
-import { DEFAULT_SERIALIZER_CONFIG, serialize, toInlineStyle, toJsonEnvelope } from '@critical-css/serializer'
-import type { MergedRule, OutputFormat } from '@critical-css/serializer'
-import { DEFAULT_VISIBILITY_CONFIG } from '@critical-css/shared'
-import type { Diagnostic, ViewportProfile, VisibilityConfig } from '@critical-css/shared'
+import { Reporter } from '@critical-css/reporter'
+import type { ReportBundle } from '@critical-css/reporter'
+import {
+  DEFAULT_SERIALIZER_CONFIG,
+  mergeViewports,
+  serialize,
+  toInlineStyle,
+  toJsonEnvelope,
+  type MergedRule,
+  type OutputFormat,
+  type PerViewportRuleSet,
+  type ViewportBand,
+} from '@critical-css/serializer'
+import { DEFAULT_VISIBILITY_CONFIG, fnv1a64 } from '@critical-css/shared'
+import type { Diagnostic, ExtractionMode, StageTiming, ViewportProfile, VisibilityConfig } from '@critical-css/shared'
 
 const ENGINE_VERSION = '0.1.0'
 
+export type ViewportName = 'desktop' | 'tablet' | 'mobile'
+
 export interface ExtractRequest {
   readonly url: string
-  readonly viewport: 'desktop' | 'tablet' | 'mobile'
+  /** One or more viewports; multi-viewport runs each independently and merges. */
+  readonly viewports?: readonly ViewportName[]
+  /** Back-compat single-viewport alias. */
+  readonly viewport?: ViewportName
+  readonly mode?: ExtractionMode
   readonly minify?: boolean
   readonly format?: OutputFormat
   readonly plugins?: readonly Plugin<unknown>[]
 }
 
 export interface ExtractOutcome {
-  /** Payload in the requested output format (606: all derived from one rule set). */
   readonly output: string
   readonly css: string
   readonly diagnostics: readonly Diagnostic[]
+  readonly reports: readonly ReportBundle[]
   readonly stats: {
+    readonly mode: ExtractionMode
+    readonly viewports: readonly string[]
     readonly matchedRules: number
-    readonly transitiveRules: number
+    readonly mergedRules: number
     readonly dependencies: number
-    readonly visibleNodes: number
-    readonly totalNodes: number
   }
 }
 
-function toMergedRule(match: CssomRuleMatch, viewportProfileId: string, layerOrder: number | null): MergedRule {
+interface ViewportExtraction {
+  readonly perViewport: PerViewportRuleSet
+  readonly diagnostics: readonly Diagnostic[]
+  readonly report: ReportBundle
+  readonly matchedCount: number
+}
+
+function toMergedRule(
+  match: CssomRuleMatch,
+  viewportProfileId: string,
+  layerOrder: number | null,
+): MergedRule {
   return {
     selectorText: match.selectorText,
     declarationText: match.declarationText,
@@ -65,26 +100,45 @@ function toMergedRule(match: CssomRuleMatch, viewportProfileId: string, layerOrd
   }
 }
 
-export async function extract(request: ExtractRequest): Promise<ExtractOutcome> {
-  const profile: ViewportProfile = BUILT_IN_PROFILES[request.viewport]
-  const diagnostics: Diagnostic[] = []
-  const registry = buildPluginRegistry(request.plugins ?? [])
-  diagnostics.push(...registry.diagnostics)
-  const dispatcher = new PluginDispatcher(registry)
-  const runId = `run-${request.viewport}`
-  const base = { route: request.url, viewport: profile, runId }
+/** A coverage-only RuleNode expressed as a matcher-shaped record for the resolver + output. */
+function ruleNodeToMatch(rule: RuleNode, cssom: CssomRuleList): CssomRuleMatch {
+  const sheet = cssom.stylesheets.find((s) => s.sourceStylesheetIndex === rule.sourceStylesheetIndex)
+  const byId = sheet !== undefined ? new Map(sheet.rules.map((r) => [r.ruleId, r])) : new Map<number, RuleNode>()
+  return {
+    stylesheetIndex: rule.sourceStylesheetIndex,
+    ruleIndexPath: rule.ruleIndexPath,
+    selectorText: rule.selectorText ?? '',
+    matchedSelectorBranches: [rule.selectorText ?? ''],
+    matchedNodeIds: [],
+    declarationText: rule.declarationText,
+    atRuleChain: atRuleChainOf(rule, byId),
+  }
+}
 
-  // ── beforeLaunch ─────────────────────────────────────────────────────
+async function extractViewport(
+  manager: BrowserManager,
+  request: ExtractRequest,
+  profileName: ViewportName,
+  dispatcher: PluginDispatcher,
+): Promise<ViewportExtraction> {
+  const profile: ViewportProfile = BUILT_IN_PROFILES[profileName]
+  const mode: ExtractionMode = request.mode ?? 'cssom'
+  const diagnostics: Diagnostic[] = []
+  const timing: StageTiming[] = []
+  const time = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
+    const start = Date.now()
+    const result = await fn()
+    timing.push({ stage, elapsedMs: Date.now() - start })
+    return result
+  }
+  const base = { route: request.url, viewport: profile, runId: `run-${profileName}` }
+
+  // beforeLaunch
   let effectiveProfile = profile
   {
     const { patches, diagnostics: d } = await dispatcher.runHook<never, BeforeLaunchPatch>(
       'beforeLaunch',
-      (hookBase) =>
-        ({
-          ...hookBase,
-          ...base,
-          proposedLaunchOptions: { headless: true, userAgent: profile.userAgent },
-        }) as never,
+      (hb) => ({ ...hb, ...base, proposedLaunchOptions: { headless: true, userAgent: profile.userAgent } }) as never,
     )
     diagnostics.push(...d)
     for (const { patch } of patches) {
@@ -93,264 +147,325 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
     }
   }
 
-  const manager = new BrowserManager({ maxConcurrency: 1 })
+  const handle = await manager.acquire(effectiveProfile)
+  // Declared outside the try so the finally can stop a started-but-unstopped
+  // session on any error path (defensive; context teardown also disposes it).
+  let coverageSession: Awaited<ReturnType<PageHandle['startCoverage']>> | null = null
+  let coverageStopped = false
   try {
-    const handle = await manager.acquire(effectiveProfile)
-    try {
-      const navigation = await handle.navigate(request.url)
-      diagnostics.push(...navigation.stabilization.diagnostics)
-      if (navigation.statusCode !== null && navigation.statusCode >= 400) {
+    // Coverage must start before navigation (700). Degrade to CSSOM if the
+    // engine lacks coverage support rather than failing the run.
+    let effectiveMode = mode
+    if (mode === 'coverage' || mode === 'hybrid') {
+      try {
+        coverageSession = await handle.startCoverage()
+      } catch (err) {
+        effectiveMode = 'cssom'
         diagnostics.push({
-          severity: 'warning',
-          code: 'HTTP_ERROR_STATUS',
-          message: `Navigation resolved with HTTP ${navigation.statusCode} — the extracted CSS describes the error page, not the intended route`,
-          source: { url: navigation.finalUrl },
+          severity: 'info',
+          code: 'RUNNING_WITHOUT_COVERAGE_SIGNAL',
+          message: `Coverage unavailable (${err instanceof Error ? err.message : String(err)}); degraded to CSSOM for ${profileName}`,
         })
       }
+    }
 
-      // ── afterNavigation ────────────────────────────────────────────
-      {
-        const { patches, diagnostics: d } = await dispatcher.runHook<never, AfterNavigationPatch>(
-          'afterNavigation',
-          (hookBase) =>
-            ({
-              ...hookBase,
-              ...base,
-              navigationResult: {
-                finalUrl: navigation.finalUrl,
-                statusCode: navigation.statusCode,
-                stable: navigation.stabilization.stable,
-              },
-            }) as never,
-        )
-        diagnostics.push(...d)
-        for (const { patch } of patches) diagnostics.push(...(patch.diagnostics ?? []))
-      }
+    const navigation = await time('navigate', () => handle.navigate(request.url))
+    diagnostics.push(...navigation.stabilization.diagnostics)
+    if (navigation.statusCode !== null && navigation.statusCode >= 400) {
+      diagnostics.push({
+        severity: 'warning',
+        code: 'HTTP_ERROR_STATUS',
+        message: `Navigation resolved with HTTP ${navigation.statusCode} — extracted CSS describes the error page`,
+        source: { url: navigation.finalUrl },
+      })
+    }
 
-      // ── beforeCollection ───────────────────────────────────────────
-      let visibilityConfig: VisibilityConfig = DEFAULT_VISIBILITY_CONFIG
-      const ignoredSelectors: string[] = []
-      {
-        const { patches, diagnostics: d } = await dispatcher.runHook<never, BeforeCollectionPatch>(
-          'beforeCollection',
-          (hookBase, earlier) => {
-            let policy = DEFAULT_VISIBILITY_CONFIG
-            const ignored: string[] = []
-            for (const { patch } of earlier) {
-              if (patch.visibilityPolicyOverride) policy = { ...policy, ...patch.visibilityPolicyOverride }
-              ignored.push(...(patch.ignoredSelectors ?? []))
-            }
-            return {
-              ...hookBase,
-              ...base,
-              currentVisibilityPolicy: policy,
-              currentIgnoredSelectors: ignored,
-            } as never
-          },
-        )
-        diagnostics.push(...d)
-        for (const { patch } of patches) {
-          if (patch.visibilityPolicyOverride) {
-            visibilityConfig = { ...visibilityConfig, ...patch.visibilityPolicyOverride }
+    // afterNavigation
+    {
+      const { patches, diagnostics: d } = await dispatcher.runHook<never, AfterNavigationPatch>(
+        'afterNavigation',
+        (hb) =>
+          ({
+            ...hb,
+            ...base,
+            navigationResult: {
+              finalUrl: navigation.finalUrl,
+              statusCode: navigation.statusCode,
+              stable: navigation.stabilization.stable,
+            },
+          }) as never,
+      )
+      diagnostics.push(...d)
+      for (const { patch } of patches) diagnostics.push(...(patch.diagnostics ?? []))
+    }
+
+    // beforeCollection (visibility policy + ignored selectors)
+    let visibilityConfig: VisibilityConfig = DEFAULT_VISIBILITY_CONFIG
+    const ignoredSelectors: string[] = []
+    {
+      const { patches, diagnostics: d } = await dispatcher.runHook<never, BeforeCollectionPatch>(
+        'beforeCollection',
+        (hb, earlier) => {
+          let policy = DEFAULT_VISIBILITY_CONFIG
+          const ignored: string[] = []
+          for (const { patch } of earlier) {
+            if (patch.visibilityPolicyOverride) policy = { ...policy, ...patch.visibilityPolicyOverride }
+            ignored.push(...(patch.ignoredSelectors ?? []))
           }
-          ignoredSelectors.push(...(patch.ignoredSelectors ?? []))
-        }
+          return { ...hb, ...base, currentVisibilityPolicy: policy, currentIgnoredSelectors: ignored } as never
+        },
+      )
+      diagnostics.push(...d)
+      for (const { patch } of patches) {
+        if (patch.visibilityPolicyOverride) visibilityConfig = { ...visibilityConfig, ...patch.visibilityPolicyOverride }
+        ignoredSelectors.push(...(patch.ignoredSelectors ?? []))
       }
+    }
 
-      const collection = await collect(handle)
+    const collection = await time('collect', () => collect(handle))
+    // Visibility classification only feeds the matcher's candidate set — skip
+    // it entirely in coverage-only mode (ADR-0005: no CSSOM matching there).
+    let allowed: readonly number[] = []
+    if (effectiveMode !== 'coverage') {
       const annotated = classifyVisibility(collection.dom.snapshot, collection.snapshotId, visibilityConfig)
-      const allowed = matchableNodeIds(collection.dom.snapshot, annotated, visibilityConfig)
-      const visibleCount = annotated.annotations.filter((a) => a.isVisible).length
+      allowed = [...matchableNodeIds(collection.dom.snapshot, annotated, visibilityConfig)]
+    }
 
-      const matched = await new SelectorMatcher().matchRules(
-        handle,
-        collection.dom,
-        collection.cssom,
-        effectiveProfile.name,
-        [...allowed],
+    // CSSOM matching (skipped for coverage-only).
+    let matched: MatchedRuleSet = {
+      snapshotId: collection.snapshotId,
+      viewportProfileId: effectiveProfile.name,
+      strategy: 'cssom',
+      matches: [],
+      diagnostics: [],
+    }
+    if (effectiveMode !== 'coverage') {
+      matched = await time('match', () =>
+        new SelectorMatcher().matchRules(handle, collection.dom, collection.cssom, effectiveProfile.name, allowed),
       )
       diagnostics.push(...matched.diagnostics)
+    }
 
-      // ── afterCollection ────────────────────────────────────────────
-      let matches = matched.matches.filter((m) => !ignoredSelectors.includes(m.selectorText))
-      {
-        const { patches, diagnostics: d } = await dispatcher.runHook<never, AfterCollectionPatch>(
-          'afterCollection',
-          (hookBase) =>
-            ({
-              ...hookBase,
-              ...base,
-              matchedSelectors: matches.map((m) => m.selectorText),
-              diagnostics,
-            }) as never,
+    // Stop coverage + map (after collection so the page is still live).
+    let extraSeedRules: readonly RuleNode[] = []
+    let includedMatches: CssomRuleMatch[] = matched.matches.filter((m) => !ignoredSelectors.includes(m.selectorText))
+
+    if (coverageSession !== null) {
+      const raw = await coverageSession.stop()
+      coverageStopped = true
+      const coverageResult = await new CoverageCollector().collect(handle, raw)
+      diagnostics.push(...coverageResult.diagnostics)
+      if (effectiveMode === 'coverage') {
+        includedMatches = coverageOnlyRules(coverageResult, collection.cssom).map((r) =>
+          ruleNodeToMatch(r, collection.cssom),
         )
-        diagnostics.push(...d)
-        for (const { patch } of patches) {
-          if (patch.excludeSelectors) {
-            matches = matches.filter((m) => !(patch.excludeSelectors as string[]).includes(m.selectorText))
-          }
-          for (const forced of patch.forceIncludeSelectors ?? []) {
-            for (const sheet of collection.cssom.stylesheets) {
-              // Same eligibility the matcher applies: disabled/inaccessible
-              // sheets are never applied by the browser.
-              if (!sheet.accessible || sheet.disabled) continue
-              const byId = new Map(sheet.rules.map((r) => [r.ruleId, r]))
-              for (const rule of sheet.rules) {
-                if (rule.ruleType === 'style' && rule.selectorText === forced) {
-                  matches = [
-                    ...matches,
-                    {
-                      stylesheetIndex: sheet.sourceStylesheetIndex,
-                      ruleIndexPath: rule.ruleIndexPath,
-                      selectorText: rule.selectorText,
-                      matchedSelectorBranches: [forced],
-                      matchedNodeIds: [],
-                      declarationText: rule.declarationText,
-                      // Real wrapper chain — a forced rule inside @media must
-                      // stay inside its @media (601 §8.3).
-                      atRuleChain: atRuleChainOf(rule, byId),
-                    },
-                  ]
-                }
+      } else if (effectiveMode === 'hybrid') {
+        const reconciliation = reconcileHybrid(matched, coverageResult, collection.cssom)
+        diagnostics.push(...reconciliation.diagnostics)
+        // Fidelity bias: output = every CSSOM match; provisionalExclude rules
+        // feed dependency resolution only.
+        extraSeedRules = reconciliation.provisionalExcludeRules
+      }
+    }
+
+    // afterCollection (exclude / force-include)
+    {
+      const { patches, diagnostics: d } = await dispatcher.runHook<never, AfterCollectionPatch>(
+        'afterCollection',
+        (hb) => ({ ...hb, ...base, matchedSelectors: includedMatches.map((m) => m.selectorText), diagnostics }) as never,
+      )
+      diagnostics.push(...d)
+      for (const { patch } of patches) {
+        if (patch.excludeSelectors) {
+          includedMatches = includedMatches.filter((m) => !(patch.excludeSelectors as string[]).includes(m.selectorText))
+        }
+        for (const forced of patch.forceIncludeSelectors ?? []) {
+          for (const sheet of collection.cssom.stylesheets) {
+            if (!sheet.accessible || sheet.disabled) continue
+            const byId = new Map(sheet.rules.map((r) => [r.ruleId, r]))
+            for (const rule of sheet.rules) {
+              if (rule.ruleType === 'style' && rule.selectorText === forced) {
+                includedMatches.push({
+                  stylesheetIndex: sheet.sourceStylesheetIndex,
+                  ruleIndexPath: rule.ruleIndexPath,
+                  selectorText: rule.selectorText,
+                  matchedSelectorBranches: [forced],
+                  matchedNodeIds: [],
+                  declarationText: rule.declarationText,
+                  atRuleChain: atRuleChainOf(rule, byId),
+                })
               }
             }
           }
         }
       }
+    }
 
-      // ── dependency resolution (AT-06) ──────────────────────────────
-      const resolution = new FixedPointResolver().resolve(
-        { ...matched, matches },
-        collection.cssom,
+    // Dependency resolution.
+    const resolution = await time('resolve', () =>
+      Promise.resolve(
+        new FixedPointResolver().resolve(
+          { ...matched, matches: includedMatches },
+          collection.cssom,
+          undefined,
+          extraSeedRules,
+        ),
+      ),
+    )
+    diagnostics.push(...resolution.diagnostics)
+
+    const layerOf = (chain: readonly { kind: string; conditionText: string }[]): number | null => {
+      const layers = chain.filter((c) => c.kind === 'layer')
+      if (layers.length === 0) return null
+      return resolution.layerRegistry.rankOf(layers[layers.length - 1]?.conditionText ?? null)
+    }
+
+    const mergedRules: MergedRule[] = includedMatches.map((m) =>
+      toMergedRule(m, effectiveProfile.name, layerOf(m.atRuleChain)),
+    )
+    for (const transitive of resolution.transitiveRules) {
+      mergedRules.push({
+        selectorText: transitive.rule.selectorText ?? '',
+        declarationText: transitive.rule.declarationText,
+        origin: 'author',
+        layerOrder: layerOf(transitive.atRuleChain),
+        atRuleChain: transitive.atRuleChain,
+        contributingViewports: [effectiveProfile.name],
+        stylesheetIndex: transitive.stylesheetIndex,
+        ruleIndex: transitive.rule.ruleIndexPath,
+      })
+    }
+
+    // beforeSerialize (rewrite / inject / exclude) — applied per viewport.
+    let finalRules = mergedRules
+    {
+      const { patches, diagnostics: d } = await dispatcher.runHook<never, BeforeSerializePatch>(
+        'beforeSerialize',
+        (hb) =>
+          ({
+            ...hb,
+            ...base,
+            currentIncludedRules: finalRules.map((r) => ({ selectorText: r.selectorText, declarationText: r.declarationText })),
+          }) as never,
       )
-      diagnostics.push(...resolution.diagnostics)
-
-      const layerOf = (chain: readonly { kind: string; conditionText: string }[]): number | null => {
-        const layers = chain.filter((c) => c.kind === 'layer')
-        if (layers.length === 0) return null
-        return resolution.layerRegistry.rankOf(layers[layers.length - 1]?.conditionText ?? null)
-      }
-
-      let mergedRules: MergedRule[] = matches.map((m) =>
-        toMergedRule(m, effectiveProfile.name, layerOf(m.atRuleChain)),
-      )
-      for (const transitive of resolution.transitiveRules) {
-        mergedRules.push({
-          selectorText: transitive.rule.selectorText ?? '',
-          declarationText: transitive.rule.declarationText,
-          origin: 'author',
-          layerOrder: layerOf(transitive.atRuleChain),
-          atRuleChain: transitive.atRuleChain,
-          contributingViewports: [effectiveProfile.name],
-          stylesheetIndex: transitive.stylesheetIndex,
-          ruleIndex: transitive.rule.ruleIndexPath,
-        })
-      }
-
-      // ── beforeSerialize ────────────────────────────────────────────
-      {
-        const { patches, diagnostics: d } = await dispatcher.runHook<never, BeforeSerializePatch>(
-          'beforeSerialize',
-          (hookBase) =>
-            ({
-              ...hookBase,
-              ...base,
-              currentIncludedRules: mergedRules.map((r) => ({
-                selectorText: r.selectorText,
-                declarationText: r.declarationText,
-              })),
-            }) as never,
-        )
-        diagnostics.push(...d)
-        let injectedIndex = 0
-        for (const { patch } of patches) {
-          for (const rewrite of patch.rewriteRules ?? []) {
-            mergedRules = mergedRules.map((r) =>
-              r.selectorText === rewrite.selectorText
-                ? { ...r, declarationText: rewrite.newDeclarationText }
-                : r,
-            )
-          }
-          if (patch.excludeSelectors) {
-            mergedRules = mergedRules.filter(
-              (r) => !(patch.excludeSelectors as string[]).includes(r.selectorText),
-            )
-          }
-          for (const injected of patch.injectRules ?? []) {
-            // Stable synthetic index — injected rules sort last, deterministically
-            // (006 canonical-ordering failure case).
-            mergedRules.push({
-              selectorText: injected.selectorText,
-              declarationText: injected.declarationText,
-              origin: 'author',
-              layerOrder: null,
-              atRuleChain: [],
-              contributingViewports: [effectiveProfile.name],
-              stylesheetIndex: 1_000_000,
-              ruleIndex: [injectedIndex],
-            })
-            injectedIndex += 1
-          }
+      diagnostics.push(...d)
+      for (const { patch } of patches) {
+        for (const rewrite of patch.rewriteRules ?? []) {
+          finalRules = finalRules.map((r) =>
+            r.selectorText === rewrite.selectorText ? { ...r, declarationText: rewrite.newDeclarationText } : r,
+          )
+        }
+        if (patch.excludeSelectors) {
+          finalRules = finalRules.filter((r) => !(patch.excludeSelectors as string[]).includes(r.selectorText))
+        }
+        for (const injected of patch.injectRules ?? []) {
+          // Content-derived identity: identical injections across viewports
+          // dedup + union contributingViewports; distinct injected content
+          // stays distinct (never collides on a per-viewport counter).
+          const hash = Number.parseInt(fnv1a64(`${injected.selectorText}\n${injected.declarationText}`).slice(0, 13), 16)
+          finalRules.push({
+            selectorText: injected.selectorText,
+            declarationText: injected.declarationText,
+            origin: 'author',
+            layerOrder: null,
+            atRuleChain: [],
+            contributingViewports: [effectiveProfile.name],
+            stylesheetIndex: 1_000_000,
+            ruleIndex: [hash],
+          })
         }
       }
+    }
 
-      const artifact = serialize(
-        {
-          rules: mergedRules,
-          dependencyManifest: resolution.manifest,
-          layerDeclarationOrder: resolution.layerRegistry.declarationOrder,
-        },
-        {
-          ...DEFAULT_SERIALIZER_CONFIG,
-          minify: request.minify ?? false,
-          format: request.format ?? 'raw-css',
-        },
-      )
+    const report = new Reporter().build({
+      route: request.url,
+      viewportProfileId: effectiveProfile.name,
+      mode: effectiveMode,
+      cssom: collection.cssom,
+      matched: includedMatches,
+      manifest: resolution.manifest,
+      graph: resolution.graph,
+      timing,
+    })
 
-      // ── afterSerialize ─────────────────────────────────────────────
-      {
-        const { patches, diagnostics: d } = await dispatcher.runHook<never, AfterSerializePatch>(
-          'afterSerialize',
-          (hookBase) =>
-            ({
-              ...hookBase,
-              ...base,
-              css: artifact.css,
-              stats: { ruleCount: artifact.stats.ruleCount, byteLength: artifact.stats.byteLength },
-            }) as never,
-        )
-        diagnostics.push(...d)
-        for (const { patch } of patches) diagnostics.push(...(patch.diagnostics ?? []))
-      }
+    return {
+      perViewport: {
+        viewportProfileId: effectiveProfile.name,
+        rules: finalRules,
+        dependencyManifest: resolution.manifest,
+        layerDeclarationOrder: resolution.layerRegistry.declarationOrder,
+      },
+      diagnostics,
+      report,
+      matchedCount: includedMatches.length,
+    }
+  } finally {
+    // Stop a started-but-unstopped coverage session on any error path before
+    // the page is released.
+    if (coverageSession !== null && !coverageStopped) {
+      await coverageSession.stop().catch(() => undefined)
+    }
+    await manager.release(handle)
+  }
+}
 
-      const output =
-        artifact.format === 'inline-style'
-          ? toInlineStyle(artifact, { 'data-route': request.url, 'data-viewport': effectiveProfile.name })
-          : artifact.format === 'json-envelope'
-            ? toJsonEnvelope(artifact, {
-                route: request.url,
-                viewport: effectiveProfile.name,
-                extractionMode: 'cssom',
-                engineVersion: ENGINE_VERSION,
-              })
-            : artifact.css
+export async function extract(request: ExtractRequest): Promise<ExtractOutcome> {
+  const viewports: readonly ViewportName[] =
+    request.viewports ?? [request.viewport ?? 'desktop']
+  const mode: ExtractionMode = request.mode ?? 'cssom'
+  const registry = buildPluginRegistry(request.plugins ?? [])
+  const dispatcher = new PluginDispatcher(registry)
 
-      return {
-        output,
-        css: artifact.css,
-        diagnostics,
-        stats: {
-          matchedRules: matches.length,
-          transitiveRules: resolution.transitiveRules.length,
-          dependencies: resolution.manifest.length,
-          visibleNodes: visibleCount,
-          totalNodes: collection.dom.snapshot.nodes.length,
-        },
-      }
-    } finally {
-      await manager.release(handle)
+  const diagnostics: Diagnostic[] = [...registry.diagnostics]
+  const manager = new BrowserManager({ maxConcurrency: 1 })
+  const extractions: ViewportExtraction[] = []
+  try {
+    for (const profileName of viewports) {
+      const result = await extractViewport(manager, request, profileName, dispatcher)
+      extractions.push(result)
+      diagnostics.push(...result.diagnostics)
     }
   } finally {
     await manager.teardown()
+  }
+
+  const bands: ViewportBand[] = viewports.map((v) => ({
+    viewportProfileId: BUILT_IN_PROFILES[v].name,
+    width: BUILT_IN_PROFILES[v].width,
+  }))
+  const merged = mergeViewports(
+    extractions.map((e) => e.perViewport),
+    bands,
+  )
+  const artifact = serialize(merged, {
+    ...DEFAULT_SERIALIZER_CONFIG,
+    minify: request.minify ?? false,
+    format: request.format ?? 'raw-css',
+  })
+
+  const output =
+    artifact.format === 'inline-style'
+      ? toInlineStyle(artifact, { 'data-route': request.url })
+      : artifact.format === 'json-envelope'
+        ? toJsonEnvelope(artifact, {
+            route: request.url,
+            viewport: viewports.join('+'),
+            extractionMode: mode,
+            engineVersion: ENGINE_VERSION,
+          })
+        : artifact.css
+
+  return {
+    output,
+    css: artifact.css,
+    diagnostics,
+    reports: extractions.map((e) => e.report),
+    stats: {
+      mode,
+      viewports: [...viewports],
+      matchedRules: extractions.reduce((sum, e) => sum + e.matchedCount, 0),
+      mergedRules: artifact.stats.ruleCount,
+      dependencies: artifact.stats.dependencyCount,
+    },
   }
 }

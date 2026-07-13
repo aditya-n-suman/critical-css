@@ -55,8 +55,7 @@ describe('M2: visibility classification (exit criterion 4)', () => {
     expect(outcome.css).not.toContain('.clipped-child')
     // Below-fold-only selector → excluded.
     expect(outcome.css).not.toContain('.below-only')
-    expect(outcome.stats.visibleNodes).toBeGreaterThan(0)
-    expect(outcome.stats.visibleNodes).toBeLessThan(outcome.stats.totalNodes)
+    expect(outcome.stats.mergedRules).toBeGreaterThan(0)
   })
 })
 

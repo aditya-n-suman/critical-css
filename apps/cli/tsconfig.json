@@ -11,9 +11,11 @@
     { "path": "../../packages/shared" },
     { "path": "../../packages/browser" },
     { "path": "../../packages/collector" },
+    { "path": "../../packages/coverage" },
     { "path": "../../packages/matcher" },
     { "path": "../../packages/dependency-graph" },
     { "path": "../../packages/plugins" },
+    { "path": "../../packages/reporter" },
     { "path": "../../packages/serializer" }
   ],
   "include": ["src"]

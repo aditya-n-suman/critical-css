@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Coverage fixture</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      .used { color: rgb(0, 128, 0); padding: 8px; }
+      .also-used { background: rgb(240, 240, 240); }
+      /* No element matches this selector — coverage marks it unused. */
+      .never-used { color: rgb(255, 0, 0); }
+      .also-never-used > .deep { display: block; }
+      .spacer { height: 2000px; }
+      /* Below-fold element's rule: matched + painted (coverage-used) but not above-fold. */
+      .below { color: rgb(0, 0, 255); }
+    </style>
+  </head>
+  <body>
+    <div class="used">Used above the fold</div>
+    <div class="also-used">Also used</div>
+    <div class="spacer"></div>
+    <div class="below">Below the fold</div>
+  </body>
+</html>

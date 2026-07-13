@@ -26,6 +26,9 @@ importers:
       '@critical-css/collector':
         specifier: workspace:*
         version: link:../../packages/collector
+      '@critical-css/coverage':
+        specifier: workspace:*
+        version: link:../../packages/coverage
       '@critical-css/dependency-graph':
         specifier: workspace:*
         version: link:../../packages/dependency-graph
@@ -35,6 +38,9 @@ importers:
       '@critical-css/plugins':
         specifier: workspace:*
         version: link:../../packages/plugins
+      '@critical-css/reporter':
+        specifier: workspace:*
+        version: link:../../packages/reporter
       '@critical-css/serializer':
         specifier: workspace:*
         version: link:../../packages/serializer
@@ -84,11 +90,30 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@20.19.43)
 
+  packages/coverage:
+    dependencies:
+      '@critical-css/browser':
+        specifier: workspace:*
+        version: link:../browser
+      '@critical-css/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@20.19.43)
+
   packages/dependency-graph:
     dependencies:
       '@critical-css/collector':
         specifier: workspace:*
         version: link:../collector
+      '@critical-css/coverage':
+        specifier: workspace:*
+        version: link:../coverage
       '@critical-css/matcher':
         specifier: workspace:*
         version: link:../matcher
@@ -131,6 +156,31 @@ importers:
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.43
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@20.19.43)
+
+  packages/reporter:
+    dependencies:
+      '@critical-css/collector':
+        specifier: workspace:*
+        version: link:../collector
+      '@critical-css/dependency-graph':
+        specifier: workspace:*
+        version: link:../dependency-graph
+      '@critical-css/matcher':
+        specifier: workspace:*
+        version: link:../matcher
+      '@critical-css/serializer':
+        specifier: workspace:*
+        version: link:../serializer
+      '@critical-css/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
       typescript:
         specifier: ^5.5.4
         version: 5.9.3

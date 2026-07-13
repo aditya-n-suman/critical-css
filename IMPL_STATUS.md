@@ -10,26 +10,26 @@
 
 | Field | Value |
 |---|---|
-| Active milestone | **M3 — Multi-Device, Coverage, Hybrid** |
+| Active milestone | **M4 — CI, Route Manifest, Cache** |
 | Active package | **Not started** |
-| Active task | **Not started — begin with `packages/coverage` (AT-05) / `packages/reporter` (docs/tasks/009)** |
-| Last session | 2026-07-12 (M2 complete: dependency-graph, visibility engine, serializer full, plugins, M1 deferrals) |
+| Active task | **Not started — begin with `packages/cache` (AT-08, docs/tasks/007)** |
+| Last session | 2026-07-13 (M3 complete: coverage, hybrid, multi-viewport merge, reporter) |
 | Next action | See "What to do next" below |
 
 ---
 
 ## What to Do Next
 
-**Start M3 — Multi-Device, Coverage, Hybrid.** (M0–M2 are complete.)
+**Start M4 — CI, Route Manifest, Incremental Cache.** (M0–M3 are complete.)
 
-Per `AGENT_IMPL_BRIEF.md §Phase M3` and `docs/implementation/001-Task-Breakdown.md §8.7, 8.9`:
+Per `AGENT_IMPL_BRIEF.md §Phase M4` and `docs/implementation/001-Task-Breakdown.md §8.11`:
 
-1. **`packages/coverage`** (AT-05) — CDP Coverage domain; depends ONLY on browser/shared (NEVER matcher — hard rule 3). Read `docs/design/700`, `docs/adr/ADR-0005`
-2. **Hybrid mode composer** inside `packages/dependency-graph` — `docs/design/701–702`
-3. **`packages/reporter`** (AT-10) — `docs/tasks/009-Implement-Reporter.md`, `docs/design/1000–1005`
-4. **Multi-viewport merge** — independent per-profile extraction + merge (016 §10.1)
-5. **Backfill G4 visual-diff harness** (`docs/testing/002`) and the M2 G7-review deferred items in Known Blockers
-6. M3 accuracy refinements for the M2 resolver: browser-probe candidate filtering (501 §8.2), `getKeyframes()` probe (502), `document.fonts` load state (503)
+1. **`packages/cache`** (AT-08 full) — read `docs/tasks/007-Implement-Cache-Manager.md`, `docs/design/800–806`. `CacheFingerprint` DTO + `computeCacheFingerprint` already exist in `@critical-css/shared`; add the store backends, route/viewport caches, invalidation.
+2. **`apps/cli` full** — route manifest expansion, `--compare-baseline` (fail build on CSS growth), CI flags.
+3. Also open (carry-over, not blocking M4):
+   - G4 visual-diff harness (`docs/testing/002`) still not built.
+   - M3 coverage byte-mapping is an approximation (see Known Blockers) — deeper `RuleTree` byte-offset model conflicts with ADR-0002; raise with project owner.
+   - M2 nested-`@layer` scopePath model; M3 resolver browser-probe accuracy refinements (501 §8.2 / 502 / 503).
 
 ---
 
@@ -78,11 +78,12 @@ Per `AGENT_IMPL_BRIEF.md §Phase M3` and `docs/implementation/001-Task-Breakdown
 
 | Item | Status | Notes |
 |---|---|---|
-| `packages/coverage` | Not started | Blocked on M0 (parallel with M1) |
-| Hybrid mode (in dependency-graph) | Not started | Blocked on M2 |
-| `packages/reporter` | Not started | Blocked on M2 |
-| `apps/playground` | Not started | |
-| **M3 exit criteria: all 5 pass** | Not started | |
+| `packages/coverage` (AT-05) | Complete | CDP coverage via `PageHandle.startCoverage()`; used/unused rule-key mapping; depends only on browser+shared (no matcher/collector); 2 integration tests |
+| Hybrid mode (in dependency-graph) | Complete | `reconcileHybrid` strong/provisional-include/provisional-exclude set algebra + fidelity bias + `coverageOnlyRules`; 4 unit tests |
+| Multi-viewport merge | Complete | `mergeViewports` (serializer): matched-in-all → unconditional, subset → synthetic width-band `@media`; single-viewport is byte-identical to prior path (goldens hold); 11 unit tests |
+| `packages/reporter` (AT-10) | Complete | 4 reports (matched/unmatched/timing/stylesheet-contribution) + dependency-graph JSON (REQ-460); pure sink; 6 unit tests |
+| `apps/playground` | Deferred | Not an M3 exit criterion; looser scope per plan, deferred |
+| **M3 exit criteria: all 5 pass** | Complete | e2e: multi-viewport merge, coverage-only, hybrid reconcile, reporter reports — all against real Chromium; G7 review pass run |
 
 ### M4 — CI, Route Manifest, Cache
 
@@ -110,11 +111,13 @@ Per `AGENT_IMPL_BRIEF.md §Phase M3` and `docs/implementation/001-Task-Breakdown
 | 2026-07-11 | Implementation agent | M0 complete: root scaffold (pnpm/turbo/tsconfig/vitest), `packages/shared` (DTOs, error hierarchy, 29 unit tests), `packages/browser` (BrowserManager pool, NavigationEngine + Stability Window, ViewportManager, DOMSnapshot, PageHandle; 18 tests incl. real-Chromium integration), 3 HTML fixtures | M0 Complete; M1 not started |
 | 2026-07-12 | Implementation agent | M1 complete: `packages/collector` (CSSOM Walker + DOM Collector, snapshotId correlation), `packages/matcher` (`element.matches()`-only, batched in-page, branch/pseudo bookkeeping per 402/403), `packages/serializer` basic (601 ordering + wrapper reconstruction + pinned pretty output), `apps/cli` MVP (`extract` command), golden baseline generated via CLI and locked byte-exact (`.gitattributes -text`). Adversarial review pass (G7) run over the M1 diff | M0+M1 Complete; M2 not started |
 | 2026-07-12 | Implementation agent | M2 complete: Visibility Engine (host-side 7-term predicate + whole-tree snapshot), `packages/dependency-graph` (FixedPointResolver, cycle detection, layer registry), `packages/plugins` (6-hook dispatcher + 5 reference plugins), serializer full (layer prelude, dedup L1, minify, formats, INV-2 validation), M1 deferrals closed (@import/adopted walks, condition activity, structured chains). New fixtures `deps` + `layout`. 143 tests green; goldens unchanged. G7 review pass run over M2 diff | M0–M2 Complete; M3 not started |
+| 2026-07-13 | Implementation agent | M3 complete: `packages/coverage` (AT-05, CDP via browser abstraction), hybrid composer + `coverageOnlyRules` in dependency-graph, multi-viewport `mergeViewports` in serializer (synthetic width-bands), `packages/reporter` (AT-10, 4 reports + dep-graph JSON). Browser gains `PageHandle.startCoverage()`. CLI gains `--mode`/`--viewports`/`--report`. New fixture `coverage`. All 20 turbo tasks green; goldens byte-identical; typecheck clean. G7 review pass run over M3 diff | M0–M3 Complete; M4 not started |
 
 ---
 
 ## Known Blockers / Issues
 
+- **M3 coverage byte-mapping is an approximation, and the design docs' resolution conflicts with ADR-0002 (raise with project owner):** `docs/design/700` §10.3 maps CDP used-byte-ranges to rules via a "RuleTree with rule-boundary bookkeeping" — but obtaining per-rule source byte offsets requires either offsets the CSSOM does not expose, or parsing the raw stylesheet text (a CSS parser, forbidden by ADR-0002). M3 instead locates each rule's verbatim `selectorText` in the coverage source text (string search, ADR-0002-safe) and tests range membership — approximate for whitespace-divergent/minified/duplicated selectors. This is **safe in hybrid mode** (coverage only upgrades/flags, never drops a CSSOM match — 701 fidelity bias) but affects **coverage-only** precision. Needs a design decision: expose source offsets from the browser layer, or accept the selector-search approximation as canonical.
 - **M2 G7 review — deferred finding (nested `@layer` conflation):** `buildLayerOrderRegistry` walks the flat rule list, so a nested `@layer base { @layer sub {…} }` registers `sub` as a top-level layer, potentially conflating it with an unrelated top-level `sub` and corrupting the emitted `@layer` prelude order. Fix in M3 alongside 305's full scopePath model (`base.sub` dotted paths). Fixed in the same review pass: font-face bare-declaration emission, lexicographic path ordering in last/first-wins, duplicate-cssText INV-2 false positive, fixed-position clip escape, CSS-nesting silent drop, forceInclude wrapper-chain/disabled-sheet handling, list-style counter-style refs, non-ASCII custom-property names, foldMarginPx in matchableNodeIds.
 - **CSS nesting (M3):** nested style-rule children are now walked and their raw `&`-selectors surface as `UNSUPPORTED_SELECTOR` diagnostics — loud, but not yet resolved to matchable selectors (needs 302's nesting-resolution treatment).
 - **G4 (visual regression) infrastructure not yet built (M1):** `docs/testing/002-Visual-Tests.md` tooling does not exist yet; M1 exit criterion 2 (rendering parity via pixel diff) is currently covered indirectly by browser-truth matching + golden byte-exactness. Build the visual-diff harness in M2 and backfill the three M1 fixtures.

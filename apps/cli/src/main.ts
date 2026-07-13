@@ -10,16 +10,24 @@ import { writeFile } from 'node:fs/promises'
 import { ExtractionError } from '@critical-css/shared'
 import { extract } from './extract.js'
 
+type ViewportName = 'desktop' | 'tablet' | 'mobile'
+type Mode = 'cssom' | 'coverage' | 'hybrid'
+
 interface ParsedArgs {
   readonly url: string
-  readonly viewport: 'desktop' | 'tablet' | 'mobile'
+  readonly viewports: readonly ViewportName[]
+  readonly mode: Mode
   readonly output: string | null
+  readonly reportOutput: string | null
   readonly minify: boolean
   readonly format: 'raw-css' | 'inline-style' | 'json-envelope'
 }
 
 const USAGE =
-  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--output <path>] [--minify] [--format raw-css|inline-style|json-envelope]'
+  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--minify] [--format raw-css|inline-style|json-envelope]'
+
+const isViewport = (v: string | undefined): v is ViewportName =>
+  v === 'desktop' || v === 'tablet' || v === 'mobile'
 
 function parseArgs(argv: readonly string[]): ParsedArgs {
   const [command, ...rest] = argv
@@ -27,8 +35,10 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     throw new UsageError(`Unknown command: ${command ?? '(none)'}\n${USAGE}`)
   }
   let url: string | null = null
-  let viewport: ParsedArgs['viewport'] = 'desktop'
+  let viewports: ViewportName[] = ['desktop']
+  let mode: Mode = 'cssom'
   let output: string | null = null
+  let reportOutput: string | null = null
   let minify = false
   let format: ParsedArgs['format'] = 'raw-css'
   for (let i = 0; i < rest.length; i++) {
@@ -51,10 +61,25 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         i += 1
         break
       case '--viewport':
-        if (value !== 'desktop' && value !== 'tablet' && value !== 'mobile') {
-          throw new UsageError(`--viewport must be desktop|tablet|mobile\n${USAGE}`)
+        if (!isViewport(value)) throw new UsageError(`--viewport must be desktop|tablet|mobile\n${USAGE}`)
+        viewports = [value]
+        i += 1
+        break
+      case '--viewports': {
+        if (value === undefined) throw new UsageError(`--viewports requires a comma list\n${USAGE}`)
+        const parsed = value.split(',').map((v) => v.trim())
+        if (parsed.length === 0 || !parsed.every(isViewport)) {
+          throw new UsageError(`--viewports entries must be desktop|tablet|mobile\n${USAGE}`)
         }
-        viewport = value
+        viewports = parsed as ViewportName[]
+        i += 1
+        break
+      }
+      case '--mode':
+        if (value !== 'cssom' && value !== 'coverage' && value !== 'hybrid') {
+          throw new UsageError(`--mode must be cssom|coverage|hybrid\n${USAGE}`)
+        }
+        mode = value
         i += 1
         break
       case '--output':
@@ -62,12 +87,17 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         output = value
         i += 1
         break
+      case '--report':
+        if (value === undefined) throw new UsageError(`--report requires a value\n${USAGE}`)
+        reportOutput = value
+        i += 1
+        break
       default:
         throw new UsageError(`Unknown flag: ${flag}\n${USAGE}`)
     }
   }
   if (url === null) throw new UsageError(`--url is required\n${USAGE}`)
-  return { url, viewport, output, minify, format }
+  return { url, viewports, mode, output, reportOutput, minify, format }
 }
 
 class UsageError extends Error {}
@@ -84,7 +114,8 @@ async function main(): Promise<number> {
   try {
     const outcome = await extract({
       url: args.url,
-      viewport: args.viewport,
+      viewports: args.viewports,
+      mode: args.mode,
       minify: args.minify,
       format: args.format,
     })
@@ -94,8 +125,11 @@ async function main(): Promise<number> {
       )
     }
     process.stderr.write(
-      `extracted ${outcome.stats.matchedRules} rules (+${outcome.stats.transitiveRules} transitive, ${outcome.stats.dependencies} dependencies) from ${outcome.stats.visibleNodes}/${outcome.stats.totalNodes} visible nodes\n`,
+      `mode=${outcome.stats.mode} viewports=${outcome.stats.viewports.join('+')} — ${outcome.stats.mergedRules} merged rules, ${outcome.stats.dependencies} dependencies\n`,
     )
+    if (args.reportOutput !== null) {
+      await writeFile(args.reportOutput, JSON.stringify(outcome.reports, null, 2), 'utf8')
+    }
     if (args.output !== null) {
       await writeFile(args.output, outcome.output, 'utf8')
     } else {
