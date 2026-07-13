@@ -8,6 +8,7 @@
   "references": [
     { "path": "../shared" },
     { "path": "../collector" },
+    { "path": "../coverage" },
     { "path": "../matcher" }
   ],
   "include": ["src"]

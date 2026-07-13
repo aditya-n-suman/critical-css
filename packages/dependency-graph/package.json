@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@critical-css/collector": "workspace:*",
+    "@critical-css/coverage": "workspace:*",
     "@critical-css/matcher": "workspace:*",
     "@critical-css/shared": "workspace:*"
   },

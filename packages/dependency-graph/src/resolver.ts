@@ -120,7 +120,14 @@ function firstWins(candidates: Array<{ rule: RuleNode; sheet: number }>): { rule
 }
 
 export class FixedPointResolver {
-  resolve(matched: MatchedRuleSet, cssom: CssomRuleList, resolutionBudget?: number): ResolutionResult {
+  resolve(
+    matched: MatchedRuleSet,
+    cssom: CssomRuleList,
+    resolutionBudget?: number,
+    /** Extra rules scanned for dependencies only (hybrid provisionalExclude);
+     *  their deps enter the manifest but the rules themselves never output. */
+    extraSeedRules: readonly RuleNode[] = [],
+  ): ResolutionResult {
     const graph = new DependencyGraph()
     const diagnostics: Diagnostic[] = []
     const registries = buildRegistries(cssom)
@@ -152,6 +159,20 @@ export class FixedPointResolver {
         value: match.selectorText,
         cssText: null,
         discoveredAt: 'seed',
+        resolutionState: 'pending',
+      })
+    }
+    // Hybrid provisionalExclude rules: scanned for deps, never output.
+    for (const rule of extraSeedRules) {
+      const id = ruleKey(rule.sourceStylesheetIndex, rule.ruleIndexPath)
+      if (rulePayload.has(id)) continue
+      rulePayload.set(id, { declarationText: rule.declarationText, sheet: rule.sourceStylesheetIndex, ruleNode: rule })
+      enqueue({
+        id,
+        kind: 'rule',
+        value: rule.selectorText ?? '',
+        cssText: null,
+        discoveredAt: 'transitive',
         resolutionState: 'pending',
       })
     }
