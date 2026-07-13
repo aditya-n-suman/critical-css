@@ -23,6 +23,9 @@ importers:
       '@critical-css/browser':
         specifier: workspace:*
         version: link:../../packages/browser
+      '@critical-css/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
       '@critical-css/collector':
         specifier: workspace:*
         version: link:../../packages/collector

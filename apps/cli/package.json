@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@critical-css/browser": "workspace:*",
+    "@critical-css/cache": "workspace:*",
     "@critical-css/collector": "workspace:*",
     "@critical-css/coverage": "workspace:*",
     "@critical-css/dependency-graph": "workspace:*",

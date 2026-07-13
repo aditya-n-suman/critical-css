@@ -53,7 +53,7 @@ import type {
   VisibilityConfig,
 } from '@critical-css/shared'
 
-const ENGINE_VERSION = '0.1.0'
+export const ENGINE_VERSION = '0.1.0'
 
 export type ViewportName = 'desktop' | 'tablet' | 'mobile'
 
@@ -69,6 +69,13 @@ export interface ExtractRequest {
   readonly plugins?: readonly Plugin<unknown>[]
   /** Chromium sandbox launch policy (101 §8.8). Defaults to `'full'`. */
   readonly sandboxPolicy?: SandboxPolicy
+  /**
+   * Reuse a caller-owned BrowserManager across multiple extract() calls
+   * (route-manifest batches, BI-11.3). When provided, extract() does NOT
+   * tear it down — the caller owns its lifecycle. When absent, behavior is
+   * unchanged: a private manager is created and torn down per call.
+   */
+  readonly browserManager?: BrowserManager
 }
 
 export interface ExtractOutcome {
@@ -426,10 +433,13 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
   const dispatcher = new PluginDispatcher(registry)
 
   const diagnostics: Diagnostic[] = [...registry.diagnostics]
-  const manager = new BrowserManager({
-    maxConcurrency: 1,
-    ...(request.sandboxPolicy !== undefined ? { sandboxPolicy: request.sandboxPolicy } : {}),
-  })
+  const ownsManager = request.browserManager === undefined
+  const manager =
+    request.browserManager ??
+    new BrowserManager({
+      maxConcurrency: 1,
+      ...(request.sandboxPolicy !== undefined ? { sandboxPolicy: request.sandboxPolicy } : {}),
+    })
   const extractions: ViewportExtraction[] = []
   try {
     for (const profileName of viewports) {
@@ -438,7 +448,7 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
       diagnostics.push(...result.diagnostics)
     }
   } finally {
-    await manager.teardown()
+    if (ownsManager) await manager.teardown()
   }
 
   const bands: ViewportBand[] = viewports.map((v) => ({

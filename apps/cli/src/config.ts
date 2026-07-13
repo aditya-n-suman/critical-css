@@ -40,6 +40,22 @@ export interface CliConfig {
   readonly minify?: boolean
   readonly format?: Format
   readonly sandboxPolicy?: SandboxPolicy
+  /** Path to the incremental disk cache (`--cache-dir`). */
+  readonly cacheDir?: string
+  /** Force-disable caching (`--no-cache`). */
+  readonly noCache?: boolean
+  /** Path to a BRIEF §2.9 route-manifest JSON file (`--routes`). */
+  readonly routes?: string
+  /** Origin the manifest's route patterns resolve against (`--base-url`). */
+  readonly baseUrl?: string
+  /** Directory route artifacts are written into (`--out-dir`). */
+  readonly outDir?: string
+  /** Committed baseline JSON to gate against (`--compare-baseline`). */
+  readonly compareBaseline?: string
+  /** Baseline JSON to (re)generate (`--write-baseline`). */
+  readonly writeBaseline?: string
+  /** Max allowed CSS growth percent for the baseline gate (`--max-growth`). */
+  readonly maxGrowth?: number
 }
 
 export class ConfigError extends Error {}
@@ -54,7 +70,7 @@ function validateConfig(raw: unknown): CliConfig {
     throw new ConfigError('config: root must be a JSON object')
   }
   const obj = raw as Record<string, unknown>
-  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'minify', 'format', 'sandboxPolicy'])
+  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'minify', 'format', 'sandboxPolicy', 'cacheDir', 'noCache', 'routes', 'baseUrl', 'outDir', 'compareBaseline', 'writeBaseline', 'maxGrowth'])
   for (const key of Object.keys(obj)) {
     if (!known.has(key)) throw new ConfigError(`config: unknown field "${key}"`)
   }
@@ -68,6 +84,14 @@ function validateConfig(raw: unknown): CliConfig {
     minify?: boolean
     format?: Format
     sandboxPolicy?: SandboxPolicy
+    cacheDir?: string
+    noCache?: boolean
+    routes?: string
+    baseUrl?: string
+    outDir?: string
+    compareBaseline?: string
+    writeBaseline?: string
+    maxGrowth?: number
   } = {}
 
   if (obj.url !== undefined) {
@@ -107,6 +131,42 @@ function validateConfig(raw: unknown): CliConfig {
   if (obj.sandboxPolicy !== undefined) {
     assertType(isSandboxPolicy(obj.sandboxPolicy), 'sandboxPolicy', "'full' | 'ci-container' | 'unsafe-no-sandbox'")
     config.sandboxPolicy = obj.sandboxPolicy as SandboxPolicy
+  }
+  if (obj.cacheDir !== undefined) {
+    assertType(typeof obj.cacheDir === 'string', 'cacheDir', 'a string')
+    config.cacheDir = obj.cacheDir as string
+  }
+  if (obj.noCache !== undefined) {
+    assertType(typeof obj.noCache === 'boolean', 'noCache', 'a boolean')
+    config.noCache = obj.noCache as boolean
+  }
+  if (obj.routes !== undefined) {
+    assertType(typeof obj.routes === 'string', 'routes', 'a string')
+    config.routes = obj.routes as string
+  }
+  if (obj.baseUrl !== undefined) {
+    assertType(typeof obj.baseUrl === 'string', 'baseUrl', 'a string')
+    config.baseUrl = obj.baseUrl as string
+  }
+  if (obj.outDir !== undefined) {
+    assertType(typeof obj.outDir === 'string', 'outDir', 'a string')
+    config.outDir = obj.outDir as string
+  }
+  if (obj.compareBaseline !== undefined) {
+    assertType(typeof obj.compareBaseline === 'string', 'compareBaseline', 'a string')
+    config.compareBaseline = obj.compareBaseline as string
+  }
+  if (obj.writeBaseline !== undefined) {
+    assertType(typeof obj.writeBaseline === 'string', 'writeBaseline', 'a string')
+    config.writeBaseline = obj.writeBaseline as string
+  }
+  if (obj.maxGrowth !== undefined) {
+    assertType(
+      typeof obj.maxGrowth === 'number' && Number.isFinite(obj.maxGrowth) && obj.maxGrowth >= 0,
+      'maxGrowth',
+      'a non-negative finite number (percent)',
+    )
+    config.maxGrowth = obj.maxGrowth as number
   }
 
   return config

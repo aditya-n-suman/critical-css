@@ -1,31 +1,22 @@
 #!/usr/bin/env node
 /**
- * critical-css-engine CLI (M1 MVP):
- *   extract --url <url> [--viewport desktop|tablet|mobile] [--output <path>]
+ * critical-css-engine CLI (M1 MVP + M4 CI pipeline, BI-11):
+ *   extract --url <url> | --routes <manifest.json> --base-url <origin>
  *
- * Exit codes: 0 success, 1 failure (attributed diagnostic on stderr), 2 usage.
+ * Exit codes: 0 success, 1 extraction failure (attributed diagnostic on
+ * stderr), 2 usage, 3 CI baseline gate failed (--compare-baseline: CSS grew
+ * beyond --max-growth, or missing dependencies detected). Extraction errors
+ * take precedence over gate failures.
  */
 
-import { writeFile } from 'node:fs/promises'
-import { ExtractionError } from '@critical-css/shared'
 import type { SandboxPolicy } from '@critical-css/shared'
 import { ConfigError, isSandboxPolicy, isViewport, loadConfigFile } from './config.js'
 import type { CliConfig, Mode, ViewportName } from './config.js'
-import { extract } from './extract.js'
-
-interface ParsedArgs {
-  readonly url: string
-  readonly viewports: readonly ViewportName[]
-  readonly mode: Mode
-  readonly output: string | null
-  readonly reportOutput: string | null
-  readonly minify: boolean
-  readonly format: 'raw-css' | 'inline-style' | 'json-envelope'
-  readonly sandboxPolicy: SandboxPolicy
-}
+import { run, type RunOptions } from './run.js'
 
 const USAGE =
-  'Usage: critical-css-engine extract --url <url> [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--config <path>]'
+  'Usage: critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <origin>) [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--out-dir <dir>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--cache-dir <dir>] [--no-cache] [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>] [--config <path>]\n' +
+  'Exit codes: 0 success, 1 extraction error, 2 usage, 3 baseline gate failed.'
 
 /**
  * Explicit opt-in only (101 §8.8) — CLI flag takes precedence, then the
@@ -66,7 +57,7 @@ async function findConfigFlag(argv: readonly string[]): Promise<CliConfig> {
   return {}
 }
 
-async function parseArgs(argv: readonly string[]): Promise<ParsedArgs> {
+export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
   const [command, ...rest] = argv
   if (command !== 'extract') {
     throw new UsageError(`Unknown command: ${command ?? '(none)'}\n${USAGE}`)
@@ -78,14 +69,25 @@ async function parseArgs(argv: readonly string[]): Promise<ParsedArgs> {
   let output: string | null = fileConfig.output ?? null
   let reportOutput: string | null = fileConfig.report ?? null
   let minify = fileConfig.minify ?? false
-  let format: ParsedArgs['format'] = fileConfig.format ?? 'raw-css'
+  let format: RunOptions['format'] = fileConfig.format ?? 'raw-css'
   let sandboxPolicy: SandboxPolicy = fileConfig.sandboxPolicy ?? envSandboxPolicy() ?? 'full'
+  let cacheDir: string | null = fileConfig.cacheDir ?? null
+  let noCache = fileConfig.noCache ?? false
+  let routes: string | null = fileConfig.routes ?? null
+  let baseUrl: string | null = fileConfig.baseUrl ?? null
+  let outDir: string = fileConfig.outDir ?? '.'
+  let compareBaseline: string | null = fileConfig.compareBaseline ?? null
+  let writeBaseline: string | null = fileConfig.writeBaseline ?? null
+  let maxGrowth: number = fileConfig.maxGrowth ?? 5
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i]
     const value = rest[i + 1]
     switch (flag) {
       case '--minify':
         minify = true
+        break
+      case '--no-cache':
+        noCache = true
         break
       case '--format':
         if (value !== 'raw-css' && value !== 'inline-style' && value !== 'json-envelope') {
@@ -138,6 +140,45 @@ async function parseArgs(argv: readonly string[]): Promise<ParsedArgs> {
         sandboxPolicy = value
         i += 1
         break
+      case '--cache-dir':
+        if (value === undefined) throw new UsageError(`--cache-dir requires a value\n${USAGE}`)
+        cacheDir = value
+        i += 1
+        break
+      case '--routes':
+        if (value === undefined) throw new UsageError(`--routes requires a value\n${USAGE}`)
+        routes = value
+        i += 1
+        break
+      case '--base-url':
+        if (value === undefined) throw new UsageError(`--base-url requires a value\n${USAGE}`)
+        baseUrl = value
+        i += 1
+        break
+      case '--out-dir':
+        if (value === undefined) throw new UsageError(`--out-dir requires a value\n${USAGE}`)
+        outDir = value
+        i += 1
+        break
+      case '--compare-baseline':
+        if (value === undefined) throw new UsageError(`--compare-baseline requires a value\n${USAGE}`)
+        compareBaseline = value
+        i += 1
+        break
+      case '--write-baseline':
+        if (value === undefined) throw new UsageError(`--write-baseline requires a value\n${USAGE}`)
+        writeBaseline = value
+        i += 1
+        break
+      case '--max-growth': {
+        const parsed = value === undefined ? Number.NaN : Number(value)
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          throw new UsageError(`--max-growth must be a non-negative percent\n${USAGE}`)
+        }
+        maxGrowth = parsed
+        i += 1
+        break
+      }
       case '--config':
         // Already consumed by findConfigFlag's pre-pass; skip its value here.
         if (value === undefined) throw new UsageError(`--config requires a value\n${USAGE}`)
@@ -147,66 +188,61 @@ async function parseArgs(argv: readonly string[]): Promise<ParsedArgs> {
         throw new UsageError(`Unknown flag: ${flag}\n${USAGE}`)
     }
   }
-  if (url === null) throw new UsageError(`--url is required\n${USAGE}`)
-  return { url, viewports, mode, output, reportOutput, minify, format, sandboxPolicy }
+  // Cross-field validation (010 §8.1: reject before any browser launches).
+  if (url === null && routes === null) throw new UsageError(`--url or --routes is required\n${USAGE}`)
+  if (url !== null && routes !== null) {
+    throw new UsageError(`--url and --routes are mutually exclusive\n${USAGE}`)
+  }
+  if (routes !== null && baseUrl === null) {
+    throw new UsageError(`--routes requires --base-url (the origin route patterns resolve against)\n${USAGE}`)
+  }
+  if (routes !== null && (output !== null || reportOutput !== null)) {
+    throw new UsageError(`--output/--report apply to single-URL mode; --routes writes artifacts under --out-dir\n${USAGE}`)
+  }
+  return {
+    url,
+    routes,
+    baseUrl,
+    outDir,
+    output,
+    reportOutput,
+    viewports,
+    mode,
+    minify,
+    format,
+    sandboxPolicy,
+    cacheDir,
+    noCache,
+    compareBaseline,
+    writeBaseline,
+    maxGrowth,
+  }
 }
 
 class UsageError extends Error {}
 
 async function main(): Promise<number> {
-  let args: ParsedArgs
+  let options: RunOptions
   try {
-    args = await parseArgs(process.argv.slice(2))
+    options = await parseArgs(process.argv.slice(2))
   } catch (err) {
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     return 2
   }
 
   try {
-    const outcome = await extract({
-      url: args.url,
-      viewports: args.viewports,
-      mode: args.mode,
-      minify: args.minify,
-      format: args.format,
-      sandboxPolicy: args.sandboxPolicy,
+    return await run(options, {
+      stdout: (text) => process.stdout.write(text),
+      stderr: (line) => process.stderr.write(`${line}\n`),
     })
-    for (const diagnostic of outcome.diagnostics) {
-      const location = diagnostic.source?.url !== null && diagnostic.source?.url !== undefined ? ` (${diagnostic.source.url})` : ''
-      process.stderr.write(
-        `[${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}${location}\n`,
-      )
-    }
-    process.stderr.write(
-      `mode=${outcome.stats.mode} viewports=${outcome.stats.viewports.join('+')} — ${outcome.stats.mergedRules} merged rules, ${outcome.stats.dependencies} dependencies\n`,
-    )
-    if (args.reportOutput !== null) {
-      await writeFile(args.reportOutput, JSON.stringify(outcome.reports, null, 2), 'utf8')
-    }
-    if (args.output !== null) {
-      await writeFile(args.output, outcome.output, 'utf8')
-    } else {
-      process.stdout.write(outcome.output)
-    }
-    return 0
   } catch (err) {
-    // Render failures through the same diagnostic taxonomy as the success
-    // path — stable machine-readable codes, not ad hoc Error.name strings.
-    if (err instanceof ExtractionError) {
-      const diagnostic = err.toDiagnostic()
-      process.stderr.write(`extraction failed — [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}\n`)
-    } else {
-      process.stderr.write(`extraction failed — ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}\n`)
+    // Batch-level setup failures (unreadable manifest/baseline/base-url) are
+    // usage errors — validated before any browser launched.
+    if (err instanceof ConfigError) {
+      process.stderr.write(`${err.message}\n`)
+      return 2
     }
-    // Fail-Fast Diagnostics (006 Principle 6): a wrapped launch/navigation
-    // failure is worthless without its real cause — surface the full chain
-    // rather than only the outer, generic message.
-    let cause: unknown = err instanceof Error ? err.cause : undefined
-    while (cause !== undefined) {
-      process.stderr.write(`  caused by: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}\n`)
-      cause = cause instanceof Error ? cause.cause : undefined
-    }
-    return 1
+    throw err
   }
 }
 

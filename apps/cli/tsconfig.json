@@ -10,6 +10,7 @@
   "references": [
     { "path": "../../packages/shared" },
     { "path": "../../packages/browser" },
+    { "path": "../../packages/cache" },
     { "path": "../../packages/collector" },
     { "path": "../../packages/coverage" },
     { "path": "../../packages/matcher" },
