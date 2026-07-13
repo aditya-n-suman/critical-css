@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declarationDir": "dist"
+  },
+  "references": [
+    { "path": "../shared" },
+    { "path": "../collector" },
+    { "path": "../matcher" },
+    { "path": "../dependency-graph" },
+    { "path": "../serializer" }
+  ],
+  "include": ["src"]
+}
