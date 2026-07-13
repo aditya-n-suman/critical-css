@@ -4,6 +4,8 @@
  */
 
 export { serialize, compareMergedRules, toInlineStyle, toJsonEnvelope } from './serialize.js'
+export { mergeViewports, synthesizeBand } from './merge.js'
+export type { PerViewportRuleSet, ViewportBand } from './merge.js'
 // The rule-index-path comparator lives in @critical-css/shared (single source
 // of ordering truth for matcher + serializer); re-exported for convenience.
 export { compareRuleIndexPaths } from '@critical-css/shared'
