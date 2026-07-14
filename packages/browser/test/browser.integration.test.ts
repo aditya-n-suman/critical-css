@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { NavigationTimeoutError } from "@critical-css/shared";
 import { BrowserManager, BUILT_IN_PROFILES } from "../src/index.js";
+import { installStabilizationMonitor } from "../src/navigation/navigation-engine.js";
 
 const FIXTURES = resolve(import.meta.dirname, "../../../fixtures");
 const fixtureUrl = (name: string): string =>
@@ -111,6 +112,82 @@ describe("packages/browser M0 integration", () => {
 		} finally {
 			await manager.release(handle);
 		}
+	});
+
+	// Regression coverage for the async-golden flake: the stability window
+	// could close early because (a) read() returned a stale quiet counter
+	// while a relevant mutation was delivered but not yet folded in by the
+	// next RAF tick, and (b) the first RAF callback counted a partial
+	// interval as a full quiet frame. Both probes are deterministic — they
+	// drive the in-page monitor directly within single in-page tasks, so no
+	// frame or poll can interleave.
+	describe("stabilization monitor quiet-window semantics (104 §8.1/§10.1)", () => {
+		const MONITOR_CONFIG = {
+			ignoredAttributePrefixes: ["data-"],
+			ignoredSelectors: [],
+			customReadinessSelector: null,
+			customReadinessGlobal: null,
+		};
+		type Monitor = {
+			read: () => { quietFrames: number };
+			reset: () => void;
+		};
+
+		it("a delivered-but-unfolded mutation blocks a stable reading (no stale counter)", async () => {
+			const handle = await manager.acquire();
+			try {
+				await handle.navigate(fixtureUrl("static"));
+				// navigate() stopped the monitor on success; reinstall fresh.
+				await handle.evaluate(installStabilizationMonitor, MONITOR_CONFIG);
+				// Let the quiet-frame counter accumulate a non-zero window.
+				await handle.evaluate(async () => {
+					const mon = (window as unknown as Record<string, unknown>)
+						.__ccssStabilization as Monitor;
+					while (mon.read().quietFrames < 3) {
+						await new Promise((r) => requestAnimationFrame(() => r(null)));
+					}
+				}, undefined as never);
+				// Mutate, let the MutationObserver microtask deliver, then read —
+				// all in one in-page task, before any RAF tick can fold `dirty` in.
+				const quietFramesAfterMutation = await handle.evaluate(async () => {
+					document.body.appendChild(document.createElement("div"));
+					await Promise.resolve(); // MO callback is ahead in the microtask queue
+					const mon = (window as unknown as Record<string, unknown>)
+						.__ccssStabilization as Monitor;
+					return mon.read().quietFrames;
+				}, undefined as never);
+				expect(quietFramesAfterMutation).toBe(0);
+			} finally {
+				await manager.release(handle);
+			}
+		});
+
+		it("counts only full RAF-to-RAF intervals: first callback after (re)arm is a baseline, not a quiet frame", async () => {
+			const handle = await manager.acquire();
+			try {
+				await handle.navigate(fixtureUrl("static"));
+				await handle.evaluate(installStabilizationMonitor, MONITOR_CONFIG);
+				// reset() re-arms the window; the monitor's persistent RAF loop is
+				// already scheduled ahead of the probe's callbacks, so tick k runs
+				// before the probe's frame-k read — deterministic FIFO ordering.
+				const counts = await handle.evaluate(async () => {
+					const mon = (window as unknown as Record<string, unknown>)
+						.__ccssStabilization as Monitor;
+					mon.reset();
+					const observed: number[] = [];
+					for (let i = 0; i < 3; i++) {
+						await new Promise((r) => requestAnimationFrame(() => r(null)));
+						observed.push(mon.read().quietFrames);
+					}
+					return observed;
+				}, undefined as never);
+				// Frame 1 establishes the baseline (partial interval — must not
+				// count); frames 2..3 are the first two full quiet intervals.
+				expect(counts).toEqual([0, 1, 2]);
+			} finally {
+				await manager.release(handle);
+			}
+		});
 	});
 
 	it("DOMSnapshot eagerly captures the whole reachable tree with fold + scroll context", async () => {

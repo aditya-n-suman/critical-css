@@ -46,14 +46,14 @@ interface MonitorConfig {
  * in-page RAF loop counts quiet frames (104 §11: never one evaluate per
  * frame); the host polls the counter alongside the corroborating gates.
  */
-function installStabilizationMonitor(cfg: MonitorConfig): void {
+export function installStabilizationMonitor(cfg: MonitorConfig): void {
   const w = window as unknown as Record<string, unknown>
   const existing = w['__ccssStabilization'] as { reset: () => void; isStopped: () => boolean } | undefined
   if (existing !== undefined && !existing.isStopped()) {
     existing.reset()
     return
   }
-  const state = { quietFrames: 0, dirty: false, fontsReady: false, stopped: false }
+  const state = { quietFrames: 0, dirty: false, fontsReady: false, stopped: false, baselined: false }
 
   const isRelevant = (m: MutationRecord): boolean => {
     const target = m.target instanceof Element ? m.target : null
@@ -97,9 +97,27 @@ function installStabilizationMonitor(cfg: MonitorConfig): void {
 
   const tick = (): void => {
     if (state.stopped) return
-    if (state.dirty) {
+    if (document.readyState !== 'complete') {
+      // The quiet window is post-load by contract (104 §8.6 gates on the
+      // corroborating readiness signals): frames elapsed while the document
+      // is still loading must not pre-fill the counter, or the readyState
+      // gate could pass with zero post-load quiet frames observed.
       state.quietFrames = 0
       state.dirty = false
+      state.baselined = false
+    } else if (state.dirty) {
+      state.quietFrames = 0
+      state.dirty = false
+    } else if (!state.baselined) {
+      // A "quiet frame" is a full RAF-to-RAF interval observed with no
+      // relevant mutation (104 §8.1: "settled paint cycles", not elapsed
+      // callbacks). The interval ending at this first eligible callback is
+      // partial — it began mid-frame at monitor install or at the moment
+      // readyState flipped — so it only establishes the frame baseline;
+      // counting starts with the next full interval. Without this, N
+      // required frames close the window up to a frame early, racing page
+      // timers scheduled ~N-frame-lengths out.
+      state.baselined = true
     } else {
       state.quietFrames += 1
     }
@@ -117,7 +135,11 @@ function installStabilizationMonitor(cfg: MonitorConfig): void {
         customReady = document.querySelector(cfg.customReadinessSelector) !== null
       }
       return {
-        quietFrames: state.quietFrames,
+        // A relevant mutation already delivered to the observer but not yet
+        // folded in by the next RAF tick must block a stable verdict (104
+        // §10.1 drains pending mutations *before* deciding each tick):
+        // report the window as empty rather than the stale counter.
+        quietFrames: state.dirty ? 0 : state.quietFrames,
         readyState: document.readyState,
         fontsReady: state.fontsReady || document.fonts === undefined,
         customReady,
@@ -126,6 +148,7 @@ function installStabilizationMonitor(cfg: MonitorConfig): void {
     reset: (): void => {
       state.quietFrames = 0
       state.dirty = false
+      state.baselined = false
     },
     // Stop the RAF loop + observer once stabilization concludes, so the
     // monitor does not keep churning during snapshot/matching evaluates.

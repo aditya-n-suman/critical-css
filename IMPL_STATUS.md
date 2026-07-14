@@ -10,22 +10,23 @@
 
 | Field | Value |
 |---|---|
-| Active milestone | **M4 — CI, Route Manifest, Cache** |
-| Active package | **None — both M4 items complete** |
-| Active task | **M4 exit gate: root-cause the `golden::async::desktop` flake, then verify M4 exit criteria** |
-| Last session | 2026-07-14 (M4: `apps/cli` full complete incl. G7 fix round) |
+| Active milestone | **M4 — CI, Route Manifest, Cache** (both code items done; milestone NOT exited) |
+| Active package | **None — `packages/cache` + `apps/cli` full both complete; flake fixed** |
+| Active task | **M4 exit blocked on the G4 visual-diff CI gate (criterion 3) + a multi-route end-to-end CI-pipeline fixture (criterion 2)** |
+| Last session | 2026-07-14 (M4: async-golden flake root-caused & fixed in packages/browser) |
 | Next action | See "What to do next" below |
 
 ---
 
 ## What to Do Next
 
-**Close out M4.** (Both M4 items — `packages/cache` and `apps/cli` full — are complete.)
+**Finish M4 exit criteria.** Both M4 *code items* (`packages/cache`, `apps/cli` full) are complete and committed, and the async-golden flake is fixed. But two of the four M4 exit criteria in `docs/implementation/002-Milestones.md §M4` are NOT yet met — do not mark M4 complete until they are:
 
-1. **Root-cause the `golden::async::desktop` flake** (Known Blockers) — a stabilization-window race in the `async` fixture; must be fixed before the M4 CI gate can be trusted (a `--compare-baseline` gate on top of a flaky golden is not viable). Likely in `packages/browser`'s post-load quiescence detection.
-2. **Verify M4 exit criteria** (`docs/implementation/002-Milestones.md` M4 section) and mark M4 complete.
-3. Then M5 — `apps/visualizer`, benchmarks.
-4. Also open (carry-over, not blocking M4):
+1. **G4 visual-diff CI gate (exit criterion 3) — the real blocker.** The milestone requires `../testing/002-Visual-Tests.md`'s dual-render "compare against baseline" step (`703-Visual-Diff.md`) wired as a REQUIRED CI gate. This has never been built (deferred since M1). The current `apps/cli` `--compare-baseline` gate compares CSS **byte size** only — it is NOT the specified visual (pixel) diff. Build the visual-diff harness per 703 + 002-Visual-Tests and wire it as a gate. This is a substantial task (screenshot capture of full-CSS vs critical-CSS render, per-viewport, pixel diff with a threshold, anti-aliasing/font-noise handling per 703) — likely warrants its own review cycle.
+2. **Multi-route end-to-end CI-pipeline fixture (exit criterion 2).** The three fail conditions (CSS growth, missing dependency, extraction error) are each unit/run-level tested and produce distinct non-zero exits, but there is no end-to-end run of the full `BRIEF §2.11` sequence (`Build → Crawl routes → Generate → Compare → Publish → Upload`) against a multi-route fixture project. Add that fixture + e2e.
+3. Exit criteria 1 (fingerprint reuse/invalidate both directions) and 4 (cache hit/miss observable in CI output — the `cache: N reused / M freshly extracted` stderr line) ARE met.
+4. Then M5 — `apps/visualizer`, benchmarks.
+5. Also open (carry-over):
    - G4 visual-diff harness (`docs/testing/002`) still not built.
    - M3 coverage byte-mapping is an approximation (see Known Blockers) — deeper `RuleTree` byte-offset model conflicts with ADR-0002; raise with project owner.
    - M2 nested-`@layer` scopePath model; M3 resolver browser-probe accuracy refinements (501 §8.2 / 502 / 503).
@@ -90,7 +91,7 @@
 |---|---|---|
 | `packages/cache` | Complete | Stores (memory/disk-LRU/remote-hook/tiered), CacheManager + invalidation, route cache (positional specificity per 803 §8.3), viewport cache (refcounted blobs), canonical SHA-256 fingerprint (owns 801 — see Known Blockers); 107 tests incl. 24 G7 regressions |
 | `apps/cli` (full: routes, baseline, CI) | Complete | Route manifest (BRIEF §2.9 compact form), browserless fingerprint inputs (base-href-aware, fail-closed), cache hot path (hit provably skips browser, REQ-301), `--compare-baseline` gate (exit 3; gate survives cache hits via persisted MISSING_* diagnostics), `--write-baseline`, `--cache-dir`/`--no-cache`, out-dir containment; 67 CLI tests incl. 9 G7 regressions |
-| **M4 exit criteria: all 5 pass** | Not started | |
+| **M4 exit criteria** | 2 / 4 met | ✅ crit-1 (fingerprint reuse/invalidate), ✅ crit-4 (cache hit/miss in CI output); ❌ crit-3 (G4 visual-diff gate — never built), ❌ crit-2 (multi-route end-to-end CI-pipeline fixture). Both code items done + flake fixed, but milestone NOT exited |
 
 ### M5 — Visual Debugger, IDE, Distributed Crawler
 
@@ -118,10 +119,14 @@
 
 | 2026-07-14 | Implementation agent | M4 item 2 complete: `apps/cli` full (BI-11). New modules: `inputs.ts` (browserless fingerprint inputs: HTML + link-scan + recursive cycle/depth-guarded `@import` scan, base-href-aware, fail-closed via `InputCollectionError` → `CACHE_FINGERPRINT_UNAVAILABLE` + uncached extraction), `cache-wiring.ts` (canonical `computeCacheFingerprint` from `@critical-css/cache`; output-affecting config rides `engineVersion` as `semver:configDigest` per 801 §8.1.5), `routes.ts` (BRIEF §2.9 compact manifest via `expandRouteManifest`; out-dir containment validation), `baseline.ts` (growth gate math), `run.ts` (orchestrator: one lazy shared `BrowserManager` across route batches, browser acquisition strictly inside `getOrProduce`'s produce callback — REQ-301; fail-at-end batches — REQ-453). New flags: `--cache-dir`, `--no-cache`, `--routes` + `--base-url` + `--out-dir`, `--compare-baseline`, `--write-baseline`, `--max-growth` (default 5); exit code 3 = baseline gate failed (1 takes precedence). Interrupted twice by API session limits; resumed from disk state both times. G7 adversarial review FAILED first pass: 2 blockers (base-href ignored in fingerprint scan → confirmed stale-CSS false hit; §2.11 missing-dependency gate defeated by cache warmth — diagnostics weren't persisted in entries) + 4 should-fixes (gate-failing run overwrote its own baseline; `--report` silently unwritten on hit; silent `@import` depth truncation; manifest output paths escaping `--out-dir`) — all 6 fixed with regression tests reproducing the exact repros (persistence rides `packages/cache`'s pre-existing `extraMeta` seam; cache package untouched). 67 CLI tests (was 20); full workspace 22/22 green; goldens byte-exact | M4 both items Complete; M4 exit gate (flake root-cause) pending |
 
+| 2026-07-14 | Implementation agent | Root-caused & fixed the `golden::async::desktop` flake (was ~1-in-3). Root cause in `packages/browser/src/navigation/navigation-engine.ts`'s in-page stabilization monitor: three compounding defects closed the quiet window up to two frames early, racing the fixture's 100ms post-load injection — (1) the partial first RAF interval was counted as a full quiet frame (off-by-one vs 104 §8.1 "settled paint cycles"); (2) `read()` returned the stale `quietFrames` in the ≤16.7ms gap between a MutationObserver delivery and the next tick folding in `dirty` (104 §10.1 drains mutations before deciding); (3) frames accumulated pre-`load` could pre-fill the counter. Fix (+31/-4): `readyState`-gated window reset, a `baselined` flag so the first eligible frame only sets the baseline, and `read()` returning `quietFrames: 0` while `dirty`. No parameter changes (requiredQuietFrames stays 6 per 104 §10.1); fixture/goldens untouched. 2 deterministic red-green regression tests added to browser integration suite. Verified: 12/12 (orchestrator) + 16/16 + 8/8-under-contention green on async golden; static/mobile goldens byte-exact; full workspace 22/22 green. G7 served by orchestrator diff-read + repro loop (bug-fix DoD: G1/G2/G3/G7). **Discovered during M4-exit verification that the milestone is NOT fully exited — see Current State / What to Do Next: the G4 visual-diff gate (exit crit-3) and a multi-route e2e (crit-2) remain** | M4 code items + flake done; M4 milestone NOT exited (2/4 exit criteria) |
+
 ---
 
 ## Known Blockers / Issues
 
+- ~~**Intermittent flake in `apps/cli` `golden::async::desktop` (RESOLVED 2026-07-14):**~~ root-caused to a 3-part quiet-window race in `packages/browser` stabilization (partial-first-frame off-by-one + stale-counter read + pre-load pre-fill); fixed with no parameter or fixture changes. See 2026-07-14 session-log row. Note for the project owner: 104 §7/§8.1/§8.6/§10.1 under-specify the quiet-window semantics that caused this — §7's "N consecutive requestAnimationFrame callbacks" literally permits counting the partial first callback (the off-by-one), §8.1's "settled paint cycles" only implies the correct full-interval reading, and §8.6's composite gate omits the post-load/`readyState` condition the implementation (correctly) enforces. Each deserves an explicit sentence in 104 §10.1 (docs not editable — Hard Rule 6).
+- **M4 milestone exit is incomplete (2 of 4 criteria unmet) — the G4 visual-diff CI gate was never built:** exit criterion 3 (`docs/implementation/002-Milestones.md §M4`) requires the dual-render pixel-diff gate from `703-Visual-Diff.md` / `002-Visual-Tests.md` wired as a required CI step; it does not exist (deferred since M1, tracked below). The shipped `--compare-baseline` gate is a CSS **byte-size** growth check, not a visual diff — they are complementary, not substitutes. Exit criterion 2 (end-to-end multi-route CI-pipeline fixture exercising all three fail conditions) also lacks a whole-pipeline e2e. Both must land before M4 can be marked exited.
 - **`@critical-css/shared`'s `computeCacheFingerprint` is deprecated-in-place (found in M4 G7, B1):** it joins fields with unescaped delimiters (confirmed collision) and uses FNV-1a/16-hex where 801 §8.4 mandates SHA-256/64-hex. The canonical implementation now lives in `@critical-css/cache` (which owns algorithm 801 per task 007; shared cannot import `node:crypto` under Hard Rule 4). Shared's version was left in place because `fnv1a64` has legitimate non-cache callers (CLI rule-ID hashing, collector snapshot IDs). **CLI integration must import `computeCacheFingerprint` from `@critical-css/cache`**; `DiskCacheStore` rejects non-64-hex keys, so the FNV path physically cannot be wired in by mistake. Consider removing shared's function once CLI integration lands.
 - **M4 cache deferrals (interface-complete, transports pending):** 806's concrete S3/Redis backends and `ResilientCacheStore` retry/circuit-breaker mechanics are interface-level (`RemoteCacheClient` enforces the "remote fault ⇒ soft miss" contract); 803 §8.5 verifying mode (`verifyShareGroup`, `--verify-routes`) deferred — needs live extraction, belongs to CLI phase; trace-event payload shape drifts slightly from 805 §8.6 (missing `workItem` on hit/miss, extra `'ttl-sweep'` cause) — align when wiring the Reporter sink.
 
