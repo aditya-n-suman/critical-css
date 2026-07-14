@@ -34,6 +34,25 @@ export interface NavigationResult {
   readonly stabilization: StabilizationResult
 }
 
+/** Rectangular crop in CSS pixels (scaled by DPR into the returned PNG). */
+export interface ScreenshotClip {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+export interface ScreenshotOptions {
+  /** Crop rectangle in CSS pixels. Omit for the whole viewport. */
+  readonly clip?: ScreenshotClip
+  /**
+   * Freeze CSS animations/transitions at their end state before capture
+   * (Playwright `animations: 'disabled'`). Default `true` — the visual-diff
+   * contract (703 §8.2) requires a time-phase-independent capture.
+   */
+  readonly disableAnimations?: boolean
+}
+
 export interface PageHandle {
   /** Navigate and stabilize. Throws `NavigationTimeoutError` on unreachable/timed-out targets. */
   navigate(url: string, options?: NavigateOptions): Promise<NavigationResult>
@@ -53,6 +72,13 @@ export interface PageHandle {
    * silently returns empty coverage.
    */
   startCoverage(): Promise<CoverageSession>
+  /**
+   * Capture a PNG screenshot of the current page (703-Visual-Diff.md §8.1).
+   * Uses Playwright's native screenshot (never a canvas read — cross-origin
+   * taint-safe, 703 §12). Returns raw PNG bytes so the visual-diff layer can
+   * decode them without a Playwright dependency of its own.
+   */
+  screenshot(options?: ScreenshotOptions): Promise<Uint8Array>
   /** Current page URL. */
   url(): string
 }

@@ -18,7 +18,7 @@ import { NavigationEngine } from '../navigation/navigation-engine.js'
 import { DOMSnapshot } from '../snapshot/dom-snapshot.js'
 import type { DOMSnapshotResult } from '../types/dom-snapshot-result.js'
 import type { CoverageSession, RawCssCoverage } from '../coverage/coverage-session.js'
-import type { NavigateOptions, NavigationResult, PageHandle } from '../types/page-handle.js'
+import type { NavigateOptions, NavigationResult, PageHandle, ScreenshotOptions } from '../types/page-handle.js'
 import { ViewportManager } from '../viewport/viewport-manager.js'
 
 export class BrowserAcquisitionError extends ExtractionError {
@@ -65,6 +65,43 @@ export function buildLaunchArgs(engine: EngineKind, policy: SandboxPolicy): stri
       throw new ExtractionError('CONFIGURATION_INVALID', `Unknown sandboxPolicy: ${String(exhaustive)}`)
     }
   }
+}
+
+/**
+ * Chromium rasterization-determinism args (703 §8.4 item 1, 002 §8.5 item 3).
+ *
+ * These force software compositing and pin colour/text rasterization so a
+ * screenshot is byte-reproducible across heterogeneous hosts and GPUs — the
+ * structural mitigation the visual-diff baseline comparison needs to not
+ * false-FAIL on a CI runner different from the host the baselines were
+ * captured on.
+ *
+ * They are ORTHOGONAL to the sandbox policy (101 §8.8, kept sandbox-only in
+ * `buildLaunchArgs`): 002 §8.5 forces software compositing "unconditionally,"
+ * so these apply to EVERY Chromium launch regardless of `sandboxPolicy`.
+ * Crucially they touch only rasterization/compositing, never layout or the
+ * CSSOM, so CSS-extraction output (the golden files) stays byte-exact — the
+ * flags change how pixels are drawn, not which rules match or where boxes lay
+ * out. `--hide-scrollbars` is deliberately NOT included here because it would
+ * alter the layout viewport width (and thus above-fold geometry / the CSSOM);
+ * scrollbar presence is already neutralized for the diff by the render path's
+ * forced `scrollbar-gutter: stable` (703 §12).
+ */
+const CHROMIUM_RASTER_DETERMINISM_ARGS: readonly string[] = [
+  '--disable-gpu', // software compositing (703 §8.4.1 / 002 §8.5.3)
+  '--force-color-profile=srgb', // pin the colour profile off the host display
+  '--disable-lcd-text', // grayscale AA, not host-dependent sub-pixel LCD text
+  '--disable-font-subpixel-positioning', // deterministic glyph placement
+]
+
+/**
+ * The full Chromium launch-arg list: sandbox policy (101 §8.8) plus the
+ * rasterization-determinism flags above. Non-Chromium engines get neither.
+ */
+export function resolveLaunchArgs(engine: EngineKind, policy: SandboxPolicy): string[] {
+  const sandbox = buildLaunchArgs(engine, policy)
+  if (engine !== 'chromium') return sandbox
+  return [...sandbox, ...CHROMIUM_RASTER_DETERMINISM_ARGS]
 }
 
 function browserTypeFor(engine: EngineKind): BrowserType {
@@ -139,6 +176,27 @@ class PageHandleImpl implements PageHandle {
     }
   }
 
+  async screenshot(options?: ScreenshotOptions): Promise<Uint8Array> {
+    const raw = getRaw(this)
+    try {
+      // Native screenshot only (never element.toDataURL) — cross-origin
+      // taint-safe (703 §12). `animations: 'disabled'` freezes CSS
+      // animations/transitions to their end state so two renders started
+      // microseconds apart are captured at the same phase (703 §8.2).
+      const buffer = await raw.page.screenshot({
+        type: 'png',
+        animations: options?.disableAnimations === false ? 'allow' : 'disabled',
+        ...(options?.clip !== undefined ? { clip: options.clip } : {}),
+      })
+      return new Uint8Array(buffer)
+    } catch (cause) {
+      throw new ExtractionError('SCREENSHOT_FAILED', `Screenshot capture failed: ${cause instanceof Error ? cause.message : String(cause)}`, {
+        cause,
+        source: { url: raw.page.url() },
+      })
+    }
+  }
+
   url(): string {
     return getRaw(this).page.url()
   }
@@ -177,6 +235,18 @@ export class BrowserManager {
       healthCheckTimeoutMs: options.healthCheckTimeoutMs ?? 1_000,
     }
     this.semaphore = new Semaphore(this.options.maxConcurrency)
+  }
+
+  /**
+   * The resolved browser build version (e.g. Chromium's "140.0.7259.5"),
+   * warming the browser if needed. Used to record the REAL browser version in
+   * baseline sidecars (002 §8.2) and to check runner/baseline version parity at
+   * suite startup (002 §11) rather than recording a placeholder string.
+   */
+  async browserVersion(): Promise<string> {
+    if (this.tornDown) throw new BrowserAcquisitionError('BrowserManager has been torn down')
+    const browser = await this.ensureBrowser()
+    return browser.version()
   }
 
   get stats(): { inUse: number; queued: number; granted: number; released: number } {
@@ -322,7 +392,7 @@ export class BrowserManager {
     const launch = browserTypeFor(this.options.engine)
       .launch({
         headless: this.options.headless,
-        args: buildLaunchArgs(this.options.engine, this.options.sandboxPolicy),
+        args: resolveLaunchArgs(this.options.engine, this.options.sandboxPolicy),
         timeout: this.options.launchTimeoutMs,
       })
       .then((browser) => {

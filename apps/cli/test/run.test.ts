@@ -53,6 +53,7 @@ describe('run()', () => {
     outDir: '.',
     output: join(dir, 'out.css'),
     reportOutput: null,
+    reportDir: null,
     viewports: ['desktop'],
     mode: 'cssom',
     minify: false,

@@ -5,7 +5,7 @@
  * internal adapter wiring never cross this boundary (ADR-0003, 100 §11).
  */
 
-export { BrowserManager, BrowserAcquisitionError, buildLaunchArgs } from './browser-manager/browser-manager.js'
+export { BrowserManager, BrowserAcquisitionError, buildLaunchArgs, resolveLaunchArgs } from './browser-manager/browser-manager.js'
 export type { BrowserManagerOptions } from './browser-manager/browser-manager.js'
 export { NavigationEngine, DEFAULT_STABILIZATION_POLICY } from './navigation/navigation-engine.js'
 export { ViewportManager, BUILT_IN_PROFILES } from './viewport/viewport-manager.js'
@@ -16,6 +16,8 @@ export type {
   NavigateOptions,
   NavigationResult,
   StabilizationResult,
+  ScreenshotOptions,
+  ScreenshotClip,
   DOMSnapshotResult,
   DOMSnapshotNode,
   BoundingRect,

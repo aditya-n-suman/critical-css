@@ -1,0 +1,11 @@
+{
+  "testId": "visual::mobile::mobile",
+  "browserVersion": "chromium 149.0.7827.55",
+  "thresholds": {
+    "perceptualThreshold": 0.1,
+    "maxDiffRatio": 0.001,
+    "includeAA": false
+  },
+  "reason": "G7 SHOULD-FIX: recapture under pinned rasterization-determinism launch args (--disable-gpu/srgb/lcd/subpixel) and record real Chromium build (703 §8.4.1, 002 §8.5.3/§8.2)",
+  "capturedAt": "2026-07-14T05:46:13.321Z"
+}

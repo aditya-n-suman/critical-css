@@ -224,6 +224,26 @@ describe("packages/browser M0 integration", () => {
 		}
 	});
 
+	it("screenshot() returns PNG bytes for the fold region (703 §8.1)", async () => {
+		const handle = await manager.acquire(BUILT_IN_PROFILES.desktop);
+		try {
+			await handle.navigate(fixtureUrl("static"));
+			const full = await handle.screenshot();
+			// PNG magic number: 0x89 'P' 'N' 'G'.
+			expect(full[0]).toBe(0x89);
+			expect(full[1]).toBe(0x50);
+			expect(full.length).toBeGreaterThan(100);
+			// A clipped capture is smaller than the full viewport capture.
+			const clipped = await handle.screenshot({
+				clip: { x: 0, y: 0, width: 1920, height: 200 },
+			});
+			expect(clipped[0]).toBe(0x89);
+			expect(clipped.length).toBeLessThan(full.length);
+		} finally {
+			await manager.release(handle);
+		}
+	});
+
 	it("throws NavigationTimeoutError when the target is unreachable", async () => {
 		const handle = await manager.acquire();
 		try {

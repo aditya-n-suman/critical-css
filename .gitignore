@@ -8,3 +8,7 @@ dist/
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# Stray CLI extraction outputs from manual runs at repo root (regenerable; never source).
+/critical-*.css
+/critical-*-report.json

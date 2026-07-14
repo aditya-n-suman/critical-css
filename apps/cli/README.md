@@ -7,7 +7,7 @@ critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <
   [--viewport desktop|tablet|mobile] [--viewports d,t,m]
   [--mode cssom|coverage|hybrid] [--minify]
   [--format raw-css|inline-style|json-envelope]
-  [--output <path>] [--report <path>] [--out-dir <dir>]
+  [--output <path>] [--report <path>] [--report-dir <dir>] [--out-dir <dir>]
   [--sandbox-policy full|ci-container|unsafe-no-sandbox]
   [--cache-dir <dir>] [--no-cache]
   [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>]
@@ -32,6 +32,11 @@ critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <
   A hit against an entry written *without* `--report` cannot reconstruct the bundles: the report
   is skipped with a loud `REPORT_UNAVAILABLE_ON_CACHE_HIT` warning on stderr (rerun with
   `--no-cache` to regenerate).
+- `--report-dir <dir>` (`--routes` mode only; BRIEF §2.11 "Upload reports"): write each route's
+  report bundle JSON to `<dir>/<artifactPath>.report.json` alongside its published CSS artifact.
+  This is the multi-route equivalent of single-URL `--report`; the two are mutually exclusive with
+  their respective modes. Cache-hit replay and the `REPORT_UNAVAILABLE_ON_CACHE_HIT` warning work
+  the same way as `--report`.
 - `--sandbox-policy` (101 §8.8): Chromium launch sandboxing. `full` (default) — no launch args,
   requires user namespaces (fails with `BROWSER_ACQUISITION_FAILED` in some restrictive
   containers). `ci-container` — adds `--disable-dev-shm-usage`, sandbox retained. `unsafe-no-sandbox`

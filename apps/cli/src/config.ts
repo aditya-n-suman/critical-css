@@ -37,6 +37,8 @@ export interface CliConfig {
   readonly mode?: Mode
   readonly output?: string
   readonly report?: string
+  /** Directory for per-route report bundles in `--routes` mode (`--report-dir`). */
+  readonly reportDir?: string
   readonly minify?: boolean
   readonly format?: Format
   readonly sandboxPolicy?: SandboxPolicy
@@ -70,7 +72,7 @@ function validateConfig(raw: unknown): CliConfig {
     throw new ConfigError('config: root must be a JSON object')
   }
   const obj = raw as Record<string, unknown>
-  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'minify', 'format', 'sandboxPolicy', 'cacheDir', 'noCache', 'routes', 'baseUrl', 'outDir', 'compareBaseline', 'writeBaseline', 'maxGrowth'])
+  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'reportDir', 'minify', 'format', 'sandboxPolicy', 'cacheDir', 'noCache', 'routes', 'baseUrl', 'outDir', 'compareBaseline', 'writeBaseline', 'maxGrowth'])
   for (const key of Object.keys(obj)) {
     if (!known.has(key)) throw new ConfigError(`config: unknown field "${key}"`)
   }
@@ -81,6 +83,7 @@ function validateConfig(raw: unknown): CliConfig {
     mode?: Mode
     output?: string
     report?: string
+    reportDir?: string
     minify?: boolean
     format?: Format
     sandboxPolicy?: SandboxPolicy
@@ -119,6 +122,10 @@ function validateConfig(raw: unknown): CliConfig {
   if (obj.report !== undefined) {
     assertType(typeof obj.report === 'string', 'report', 'a string')
     config.report = obj.report as string
+  }
+  if (obj.reportDir !== undefined) {
+    assertType(typeof obj.reportDir === 'string', 'reportDir', 'a string')
+    config.reportDir = obj.reportDir as string
   }
   if (obj.minify !== undefined) {
     assertType(typeof obj.minify === 'boolean', 'minify', 'a boolean')

@@ -1,3 +1,7 @@
 # Golden CSS baselines are compared byte-exactly (docs/testing/003-Golden-Files.md):
 # never let Git rewrite their line endings on checkout.
 fixtures/golden/*.css -text
+
+# Visual-regression baselines are lossless PNG (docs/testing/002-Visual-Tests.md
+# §8.2): treat as binary so Git never rewrites bytes/line endings on checkout.
+fixtures/visual-baselines/**/*.png binary

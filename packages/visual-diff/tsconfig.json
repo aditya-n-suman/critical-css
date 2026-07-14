@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"]
+  },
+  "references": [{ "path": "../shared" }, { "path": "../browser" }],
+  "include": ["src"]
+}

@@ -44,6 +44,12 @@ export interface RunOptions {
   readonly outDir: string
   readonly output: string | null
   readonly reportOutput: string | null
+  /**
+   * Route-mode "Upload reports" step (BRIEF §2.11): when set, each route
+   * writes its report bundle JSON to `<reportDir>/<artifactPath>.report.json`.
+   * `--report`/`reportOutput` remains the single-URL equivalent.
+   */
+  readonly reportDir: string | null
   readonly viewports: readonly ViewportName[]
   readonly mode: Mode
   readonly minify: boolean
@@ -137,6 +143,17 @@ function formatErrorChain(err: unknown): string[] {
   return lines
 }
 
+/** Write one route's report bundle under --report-dir, mirroring its artifact path. */
+async function writeRouteReport(
+  reportDir: string,
+  artifactPath: string,
+  reports: ExtractOutcome['reports'],
+): Promise<void> {
+  const target = resolve(reportDir, `${artifactPath}.report.json`)
+  await mkdir(dirname(target), { recursive: true })
+  await writeFile(target, JSON.stringify(reports, null, 2), 'utf8')
+}
+
 async function runUnit(
   unit: WorkUnit,
   options: RunOptions,
@@ -202,7 +219,8 @@ async function runUnit(
         extraMeta: {
           missingDependencyDiagnostics: missingDiagnostics,
           ...(unit.route !== null ? { routePattern: unit.route.pattern } : {}),
-          ...(unit.route === null && options.reportOutput !== null
+          ...((unit.route === null && options.reportOutput !== null) ||
+          (unit.route !== null && options.reportDir !== null)
             ? { reports: freshOutcome.reports }
             : {}),
         },
@@ -231,6 +249,8 @@ async function runUnit(
       .map((d) => d.code)
     if (unit.route === null && options.reportOutput !== null) {
       await writeFile(options.reportOutput, JSON.stringify(outcome.reports, null, 2), 'utf8')
+    } else if (unit.route !== null && options.reportDir !== null && unit.artifactPath !== null) {
+      await writeRouteReport(options.reportDir, unit.artifactPath, outcome.reports)
     }
   } else if (hitEntryMeta !== null) {
     // Cache hit: replay the persisted MISSING_* diagnostics so the §2.11
@@ -241,13 +261,21 @@ async function runUnit(
       io.stderr(formatDiagnostic(diagnostic, prefix))
     }
     missingDependencyCodes = persisted.map((d) => d.code)
+    const persistedReports = hitEntryMeta['reports']
     if (unit.route === null && options.reportOutput !== null) {
-      const persistedReports = hitEntryMeta['reports']
       if (Array.isArray(persistedReports)) {
         await writeFile(options.reportOutput, JSON.stringify(persistedReports, null, 2), 'utf8')
       } else {
         io.stderr(
           `${prefix}[warning] REPORT_UNAVAILABLE_ON_CACHE_HIT: --report skipped — the cache entry was written by a run without --report; rerun with --no-cache to regenerate the reports`,
+        )
+      }
+    } else if (unit.route !== null && options.reportDir !== null && unit.artifactPath !== null) {
+      if (Array.isArray(persistedReports)) {
+        await writeRouteReport(options.reportDir, unit.artifactPath, persistedReports as ExtractOutcome['reports'])
+      } else {
+        io.stderr(
+          `${prefix}[warning] REPORT_UNAVAILABLE_ON_CACHE_HIT: --report-dir skipped — the cache entry was written by a run without --report-dir; rerun with --no-cache to regenerate the reports`,
         )
       }
     }

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CI project — products</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      .nav { height: 56px; background: #0b5fff; color: #fff; padding: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 24px; }
+      .card { background: #fafafa; border: 1px solid #ddd; padding: 16px; }
+      .card h2 { font-size: 20px; margin: 0 0 8px; }
+      .price { color: #b12704; font-weight: bold; }
+      .spacer { height: 1600px; }
+      .footer { height: 180px; background: #222; color: #eee; padding: 24px; }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">Products</nav>
+    <section class="grid">
+      <div class="card"><h2>Widget</h2><span class="price">$9</span></div>
+      <div class="card"><h2>Gadget</h2><span class="price">$19</span></div>
+      <div class="card"><h2>Gizmo</h2><span class="price">$29</span></div>
+    </section>
+    <div class="spacer"></div>
+    <footer class="footer">Below-fold footer</footer>
+  </body>
+</html>

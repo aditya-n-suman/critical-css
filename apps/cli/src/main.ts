@@ -15,7 +15,7 @@ import type { CliConfig, Mode, ViewportName } from './config.js'
 import { run, type RunOptions } from './run.js'
 
 const USAGE =
-  'Usage: critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <origin>) [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--out-dir <dir>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--cache-dir <dir>] [--no-cache] [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>] [--config <path>]\n' +
+  'Usage: critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <origin>) [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--report-dir <dir>] [--out-dir <dir>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--cache-dir <dir>] [--no-cache] [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>] [--config <path>]\n' +
   'Exit codes: 0 success, 1 extraction error, 2 usage, 3 baseline gate failed.'
 
 /**
@@ -68,6 +68,7 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
   let mode: Mode = fileConfig.mode ?? 'cssom'
   let output: string | null = fileConfig.output ?? null
   let reportOutput: string | null = fileConfig.report ?? null
+  let reportDir: string | null = fileConfig.reportDir ?? null
   let minify = fileConfig.minify ?? false
   let format: RunOptions['format'] = fileConfig.format ?? 'raw-css'
   let sandboxPolicy: SandboxPolicy = fileConfig.sandboxPolicy ?? envSandboxPolicy() ?? 'full'
@@ -131,6 +132,11 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
       case '--report':
         if (value === undefined) throw new UsageError(`--report requires a value\n${USAGE}`)
         reportOutput = value
+        i += 1
+        break
+      case '--report-dir':
+        if (value === undefined) throw new UsageError(`--report-dir requires a value\n${USAGE}`)
+        reportDir = value
         i += 1
         break
       case '--sandbox-policy':
@@ -199,6 +205,9 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
   if (routes !== null && (output !== null || reportOutput !== null)) {
     throw new UsageError(`--output/--report apply to single-URL mode; --routes writes artifacts under --out-dir\n${USAGE}`)
   }
+  if (url !== null && reportDir !== null) {
+    throw new UsageError(`--report-dir applies to --routes mode; use --report for a single --url\n${USAGE}`)
+  }
   return {
     url,
     routes,
@@ -206,6 +215,7 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
     outDir,
     output,
     reportOutput,
+    reportDir,
     viewports,
     mode,
     minify,

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CI project — missing dependency</title>
+    <style>
+      body { margin: 0; font-family: sans-serif; }
+      /* Above-fold element references an animation whose @keyframes rule is
+         deliberately NOT declared anywhere → the dependency resolver emits a
+         MISSING_KEYFRAMES diagnostic (REQ-452), which the §2.11 gate fails on.
+         The longhand `animation-name` is used deliberately: the shorthand form
+         only resolves names already known to be @keyframes (502 §8.6), so an
+         undeclared name must be expressed as the longhand to be detectable. */
+      .hero {
+        height: 300px;
+        background: #4a148c;
+        color: #fff;
+        padding: 24px;
+        animation-name: slide-in-undeclared;
+        animation-duration: 1s;
+      }
+      .hero h1 { font-size: 32px; margin: 0; }
+      .spacer { height: 1600px; }
+      .footer { height: 180px; background: #222; color: #eee; padding: 24px; }
+    </style>
+  </head>
+  <body>
+    <header class="hero"><h1>Missing dependency route</h1></header>
+    <div class="spacer"></div>
+    <footer class="footer">Below-fold footer</footer>
+  </body>
+</html>
