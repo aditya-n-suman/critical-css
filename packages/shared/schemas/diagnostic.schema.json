@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://critical-css-engine.dev/schemas/diagnostic.schema.json",
+  "title": "Diagnostic",
+  "description": "Critical CSS Extraction Engine — Diagnostic wire schema (M5 crit-3, docs/design/1000-Diagnostics-Overview.md / docs/implementation/002-Milestones.md §M5). The machine-readable contract an editor extension / language server consumes to render inline diagnostics: one JSON object per `Diagnostic` the engine emits (packages/shared/src/dtos/diagnostic.ts). Mirrors that TypeScript interface field-for-field; kept from drifting by test/diagnostic-schema.test.ts, which validates every diagnostic the engine can actually construct (every ExtractionError subclass's toDiagnostic() output, plus every literal Diagnostic emitted by a pipeline stage) against this file, and fails if a `code` is emitted that is not enumerated here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["severity", "code", "message"],
+  "properties": {
+    "severity": {
+      "$ref": "#/$defs/severity"
+    },
+    "code": {
+      "$ref": "#/$defs/code"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable message. Not machine-matched — use `code` for programmatic branching."
+    },
+    "source": {
+      "$ref": "#/$defs/sourceLocation"
+    },
+    "context": {
+      "type": "object",
+      "description": "Structured, JSON-serializable context (route, viewport, elapsed ms, …). Shape varies per `code`; not enumerated here — an editor extension should treat it as opaque key/value data to display, not to parse structurally."
+    }
+  },
+  "$defs": {
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warning", "error"],
+      "description": "docs/design/1000-Diagnostics-Overview.md — maps directly to LSP DiagnosticSeverity (error=1, warning=2, information=3) an editor extension would use: error, warning, info in that priority order."
+    },
+    "sourceLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": ["string", "null"],
+          "description": "URL of the artifact (page, stylesheet) this diagnostic refers to. null for inline/synthetic sources."
+        },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "code": {
+      "type": "string",
+      "description": "Stable, machine-readable diagnostic code. The complete catalog of codes the engine can currently emit as a structured `Diagnostic` (packages/shared's `Diagnostic` type) is enumerated below — this is the code catalog crit-3 requires. Codes are grouped by originating error class / pipeline stage for readability; the enum itself is flat (an editor extension does not need to know which stage emitted a code, only how to react to it).",
+      "enum": [
+        "NAVIGATION_TIMEOUT",
+        "SELECTOR_MATCH_FAILED",
+        "SERIALIZATION_FAILED",
+        "DEPENDENCY_RESOLUTION_FAILED",
+        "CACHE_FAILED",
+        "PLUGIN_FAILED",
+
+        "STABILIZATION_TIMEOUT",
+
+        "RUNNING_WITHOUT_COVERAGE_SIGNAL",
+        "HTTP_ERROR_STATUS",
+
+        "COVERAGE_SHEET_UNMAPPED",
+
+        "HYBRID_RECONCILED",
+
+        "CYCLIC_DEPENDENCY",
+        "MISSING_KEYFRAMES",
+        "MISSING_VARIABLE_DECLARATION",
+        "DEPENDENCY_DISCOVERY_FAILED",
+
+        "STABILITY_VIOLATION",
+        "NO_STAMPED_NODES",
+        "UNSUPPORTED_SELECTOR",
+        "DYNAMIC_PSEUDO_CLASS_EXCLUDED_BY_DESIGN",
+
+        "PLUGIN_INVALID",
+        "PLUGIN_DUPLICATE_NAME",
+        "PLUGIN_LOG",
+
+        "CROSS_ORIGIN_STYLESHEET_SKIPPED",
+        "CSSOM_WALK_ERROR",
+        "UNKNOWN_GROUPING_RULE",
+        "IMPORT_SHEET_UNAVAILABLE",
+        "CIRCULAR_IMPORT"
+      ]
+    }
+  }
+}

@@ -5,8 +5,11 @@
  * navigate → collect → classifyVisibility → matcher/coverage → hybrid
  * reconcile → FixedPointResolver → per-viewport MergedRule[]. Then
  * mergeViewports across profiles → serialize. Reporter builds the four M3
- * reports from the first viewport's terminal outputs. Six plugin hook seams
- * dispatched in order (ADR-0004).
+ * reports (+ the M5 extraction trace, docs/design/1003-Tracing.md) from each
+ * viewport's terminal outputs; `withSerializationStage` (@critical-css/
+ * reporter) then attaches the one cross-viewport stage — serialization,
+ * timed here — into every viewport's trace. Six plugin hook seams dispatched
+ * in order (ADR-0004).
  *
  * CSS payload is the ONLY thing that reaches stdout; diagnostics → stderr.
  */
@@ -14,7 +17,7 @@
 import { BrowserManager, BUILT_IN_PROFILES } from '@critical-css/browser'
 import type { PageHandle } from '@critical-css/browser'
 import { atRuleChainOf, classifyVisibility, collect, matchableNodeIds } from '@critical-css/collector'
-import type { CssomRuleList, RuleNode } from '@critical-css/collector'
+import type { CollectorDiagnosticRecord, CssomRuleList, RuleNode } from '@critical-css/collector'
 import { CoverageCollector } from '@critical-css/coverage'
 import { coverageOnlyRules, FixedPointResolver, reconcileHybrid } from '@critical-css/dependency-graph'
 import { SelectorMatcher } from '@critical-css/matcher'
@@ -30,7 +33,7 @@ import {
   type BeforeSerializePatch,
   type Plugin,
 } from '@critical-css/plugins'
-import { Reporter } from '@critical-css/reporter'
+import { Reporter, withSerializationStage } from '@critical-css/reporter'
 import type { ReportBundle } from '@critical-css/reporter'
 import {
   DEFAULT_SERIALIZER_CONFIG,
@@ -116,6 +119,52 @@ function toMergedRule(
   }
 }
 
+/**
+ * B1: the CSSOM walker (packages/collector/src/cssom-walker/cssom-walker.ts)
+ * emits real `CollectorDiagnosticRecord`s (`CROSS_ORIGIN_STYLESHEET_SKIPPED`,
+ * `CSSOM_WALK_ERROR`, `UNKNOWN_GROUPING_RULE`, `IMPORT_SHEET_UNAVAILABLE`,
+ * `CIRCULAR_IMPORT`) attached per-stylesheet on `CssomRuleList.stylesheets[].
+ * diagnostics` (plus a walk-level `CssomRuleList.diagnostics`, currently
+ * always empty but included here for forward compatibility) — but nothing
+ * ever read them, so they silently never reached `ExtractOutcome.diagnostics`.
+ * Severities mirror how comparable conditions are already classified
+ * elsewhere in this function (a truly-inaccessible/unreadable source is
+ * `warning`; a walked-but-not-fully-modeled construct is `info`).
+ */
+function severityForCssomDiagnostic(code: string): 'info' | 'warning' | 'error' {
+  switch (code) {
+    case 'UNKNOWN_GROUPING_RULE':
+      return 'info'
+    case 'CROSS_ORIGIN_STYLESHEET_SKIPPED':
+    case 'CSSOM_WALK_ERROR':
+    case 'IMPORT_SHEET_UNAVAILABLE':
+    case 'CIRCULAR_IMPORT':
+      return 'warning'
+    default:
+      return 'warning'
+  }
+}
+
+function toCssomDiagnostic(record: CollectorDiagnosticRecord, stylesheetIndex?: number): Diagnostic {
+  return {
+    severity: severityForCssomDiagnostic(record.code),
+    code: record.code,
+    message: record.message,
+    source: { url: record.href },
+    ...(stylesheetIndex !== undefined ? { context: { stylesheetIndex } } : {}),
+  }
+}
+
+/** Folds every CSSOM-walk diagnostic (per-stylesheet + walk-level) into the shared Diagnostic shape (B1). */
+function cssomDiagnostics(cssom: CssomRuleList): Diagnostic[] {
+  const out: Diagnostic[] = []
+  for (const sheet of cssom.stylesheets) {
+    for (const record of sheet.diagnostics) out.push(toCssomDiagnostic(record, sheet.sourceStylesheetIndex))
+  }
+  for (const record of cssom.diagnostics) out.push(toCssomDiagnostic(record))
+  return out
+}
+
 /** A coverage-only RuleNode expressed as a matcher-shaped record for the resolver + output. */
 function ruleNodeToMatch(rule: RuleNode, cssom: CssomRuleList): CssomRuleMatch {
   const sheet = cssom.stylesheets.find((s) => s.sourceStylesheetIndex === rule.sourceStylesheetIndex)
@@ -147,7 +196,19 @@ async function extractViewport(
     timing.push({ stage, elapsedMs: Date.now() - start })
     return result
   }
-  const base = { route: request.url, viewport: profile, runId: `run-${profileName}` }
+  // runId must uniquely identify THIS route+viewport work-unit (A1): deriving
+  // it from the viewport profile name alone made two different routes run at
+  // the same viewport (a normal same-batch occurrence, apps/cli route
+  // manifests) produce identical runId → identical traceId → identical
+  // run-span spanId (packages/reporter/src/trace.ts). Folding `request.url`
+  // in fixes that. Content-derived (route + viewport), not
+  // `Date.now()`/`Math.random()`: those would make the trace non-reproducible
+  // for the SAME route+viewport across rebuilds, which packages/reporter's
+  // own tests assert on (trace.test.ts "deterministic ... traceId"/"spanIds
+  // are deterministic"). No golden test compares runId/traceId byte-for-byte
+  // against a literal — goldens only pin `outcome.css` — so this stays free
+  // to change.
+  const base = { route: request.url, viewport: profile, runId: `run-${request.url}-${profileName}` }
 
   // beforeLaunch
   let effectiveProfile = profile
@@ -239,6 +300,11 @@ async function extractViewport(
     }
 
     const collection = await time('collect', () => collect(handle))
+    // B1: surface the 5 real CSSOM-walk diagnostic codes (cross-origin sheets,
+    // per-rule read failures, unmodeled grouping rules, broken/circular
+    // @import) that the collector produces but previously never reached the
+    // emitted Diagnostic stream.
+    diagnostics.push(...cssomDiagnostics(collection.cssom))
     // Visibility classification only feeds the matcher's candidate set — skip
     // it entirely in coverage-only mode (ADR-0005: no CSSOM matching there).
     let allowed: readonly number[] = []
@@ -402,6 +468,7 @@ async function extractViewport(
       manifest: resolution.manifest,
       graph: resolution.graph,
       timing,
+      runId: base.runId,
     })
 
     return {
@@ -459,11 +526,19 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
     extractions.map((e) => e.perViewport),
     bands,
   )
+  // Serialization is genuinely cross-viewport (it runs once, after merging
+  // all viewports' rule sets) — no single viewport's Reporter.build() call
+  // ever observes it, so it is timed here and attached to each viewport's
+  // extraction trace afterward (see withSerializationStage's doc comment).
+  const serializeStart = Date.now()
   const artifact = serialize(merged, {
     ...DEFAULT_SERIALIZER_CONFIG,
     minify: request.minify ?? false,
     format: request.format ?? 'raw-css',
   })
+  const serializeElapsedMs = Date.now() - serializeStart
+  const serializeAssembledAt = Date.now()
+  const reports = extractions.map((e) => withSerializationStage(e.report, serializeElapsedMs, serializeAssembledAt))
 
   const output =
     artifact.format === 'inline-style'
@@ -481,7 +556,7 @@ export async function extract(request: ExtractRequest): Promise<ExtractOutcome> 
     output,
     css: artifact.css,
     diagnostics,
-    reports: extractions.map((e) => e.report),
+    reports,
     stats: {
       mode,
       viewports: [...viewports],

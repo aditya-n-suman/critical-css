@@ -1,0 +1,896 @@
+[
+  {
+    "route": "http://127.0.0.1:33157/",
+    "viewportProfileId": "desktop",
+    "mode": "cssom",
+    "matchedSelectors": {
+      "count": 7,
+      "rows": [
+        {
+          "selectorText": "body",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            0
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            1
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav a",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            2
+          ],
+          "matchedNodeCount": 3
+        },
+        {
+          "selectorText": ".hero",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            3
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".hero h1",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            4
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".hero p",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            5
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".spacer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            6
+          ],
+          "matchedNodeCount": 1
+        }
+      ]
+    },
+    "unmatchedSelectors": {
+      "count": 1,
+      "rows": [
+        {
+          "selectorText": ".footer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            7
+          ]
+        }
+      ]
+    },
+    "timing": {
+      "stages": [
+        {
+          "stage": "navigate",
+          "elapsedMs": 161
+        },
+        {
+          "stage": "collect",
+          "elapsedMs": 13
+        },
+        {
+          "stage": "match",
+          "elapsedMs": 3
+        },
+        {
+          "stage": "resolve",
+          "elapsedMs": 2
+        }
+      ],
+      "totalMs": 179
+    },
+    "stylesheetContribution": {
+      "stylesheets": [
+        {
+          "stylesheetHref": "inline#0",
+          "retainedRuleCount": 7,
+          "totalRuleCount": 8,
+          "byteContribution": 433
+        }
+      ],
+      "totalBytes": 433
+    },
+    "dependencyGraph": {
+      "nodes": [
+        {
+          "id": "rule:0:0",
+          "type": "rule",
+          "value": "body"
+        },
+        {
+          "id": "rule:0:1",
+          "type": "rule",
+          "value": ".nav"
+        },
+        {
+          "id": "rule:0:2",
+          "type": "rule",
+          "value": ".nav a"
+        },
+        {
+          "id": "rule:0:3",
+          "type": "rule",
+          "value": ".hero"
+        },
+        {
+          "id": "rule:0:4",
+          "type": "rule",
+          "value": ".hero h1"
+        },
+        {
+          "id": "rule:0:5",
+          "type": "rule",
+          "value": ".hero p"
+        },
+        {
+          "id": "rule:0:6",
+          "type": "rule",
+          "value": ".spacer"
+        }
+      ],
+      "edges": []
+    },
+    "extractionTrace": {
+      "spans": [
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "cb295356915e3630",
+          "name": "run",
+          "kind": "run",
+          "startTime": 1784096601571,
+          "attributes": {
+            "runId": "run-desktop"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "7b13f8cb87e8c255",
+          "parentSpanId": "cb295356915e3630",
+          "name": "http://127.0.0.1:33157/",
+          "kind": "route",
+          "startTime": 1784096601571,
+          "attributes": {
+            "route": "http://127.0.0.1:33157/"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "87e826c8253eeb78",
+          "parentSpanId": "7b13f8cb87e8c255",
+          "name": "desktop",
+          "kind": "viewport",
+          "startTime": 1784096601571,
+          "attributes": {
+            "viewportProfileId": "desktop"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "4100d13050ce2b9d",
+          "parentSpanId": "87e826c8253eeb78",
+          "name": "navigate",
+          "kind": "stage",
+          "startTime": 1784096601571,
+          "endTime": 1784096601732,
+          "attributes": {
+            "elapsedMs": 161
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "96316460f9825e84",
+          "parentSpanId": "87e826c8253eeb78",
+          "name": "collect",
+          "kind": "stage",
+          "startTime": 1784096601732,
+          "endTime": 1784096601745,
+          "attributes": {
+            "elapsedMs": 13
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "db2a873d074842f1",
+          "parentSpanId": "87e826c8253eeb78",
+          "name": "match",
+          "kind": "stage",
+          "startTime": 1784096601745,
+          "endTime": 1784096601748,
+          "attributes": {
+            "elapsedMs": 3
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "f0425113522b160e",
+          "parentSpanId": "87e826c8253eeb78",
+          "name": "resolve",
+          "kind": "stage",
+          "startTime": 1784096601748,
+          "endTime": 1784096601750,
+          "attributes": {
+            "elapsedMs": 2
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "838c0b9899d90c95",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": "body",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8388a59899d6296c",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".nav",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8392d79899ded2e7",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".nav a",
+                "matchedElementCount": 3
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "838f719899dbefbe",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".hero",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "837e739899cd7ff1",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".hero h1",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "837b0d9899ca9cc8",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".hero p",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "83853f9899d34643",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".spacer",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "141541c5fcd0bdc1",
+          "parentSpanId": "db2a873d074842f1",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601748,
+          "endTime": 1784096601748,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.excluded",
+              "timestamp": 1784096601748,
+              "attributes": {
+                "selector": ".footer",
+                "matchedElementCount": 0
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "d9a16b104c60956c",
+          "parentSpanId": "7b13f8cb87e8c255",
+          "name": "serialize",
+          "kind": "stage",
+          "startTime": 1784096601771,
+          "endTime": 1784096601771,
+          "attributes": {
+            "elapsedMs": 0,
+            "note": "cross-viewport stage: measured once for the whole extract() call, attributed identically to each viewport bundle"
+          },
+          "events": [],
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "route": "http://127.0.0.1:33157/",
+    "viewportProfileId": "mobile",
+    "mode": "cssom",
+    "matchedSelectors": {
+      "count": 7,
+      "rows": [
+        {
+          "selectorText": "body",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            0
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            1
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav a",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            2
+          ],
+          "matchedNodeCount": 3
+        },
+        {
+          "selectorText": ".hero",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            3
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".hero h1",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            4
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".hero p",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            5
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".spacer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            6
+          ],
+          "matchedNodeCount": 1
+        }
+      ]
+    },
+    "unmatchedSelectors": {
+      "count": 1,
+      "rows": [
+        {
+          "selectorText": ".footer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            7
+          ]
+        }
+      ]
+    },
+    "timing": {
+      "stages": [
+        {
+          "stage": "navigate",
+          "elapsedMs": 150
+        },
+        {
+          "stage": "collect",
+          "elapsedMs": 17
+        },
+        {
+          "stage": "match",
+          "elapsedMs": 3
+        },
+        {
+          "stage": "resolve",
+          "elapsedMs": 0
+        }
+      ],
+      "totalMs": 170
+    },
+    "stylesheetContribution": {
+      "stylesheets": [
+        {
+          "stylesheetHref": "inline#0",
+          "retainedRuleCount": 7,
+          "totalRuleCount": 8,
+          "byteContribution": 433
+        }
+      ],
+      "totalBytes": 433
+    },
+    "dependencyGraph": {
+      "nodes": [
+        {
+          "id": "rule:0:0",
+          "type": "rule",
+          "value": "body"
+        },
+        {
+          "id": "rule:0:1",
+          "type": "rule",
+          "value": ".nav"
+        },
+        {
+          "id": "rule:0:2",
+          "type": "rule",
+          "value": ".nav a"
+        },
+        {
+          "id": "rule:0:3",
+          "type": "rule",
+          "value": ".hero"
+        },
+        {
+          "id": "rule:0:4",
+          "type": "rule",
+          "value": ".hero h1"
+        },
+        {
+          "id": "rule:0:5",
+          "type": "rule",
+          "value": ".hero p"
+        },
+        {
+          "id": "rule:0:6",
+          "type": "rule",
+          "value": ".spacer"
+        }
+      ],
+      "edges": []
+    },
+    "extractionTrace": {
+      "spans": [
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "a10da324e1bb92d2",
+          "name": "run",
+          "kind": "run",
+          "startTime": 1784096601767,
+          "attributes": {
+            "runId": "run-mobile"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "6bd8eccda649f477",
+          "parentSpanId": "a10da324e1bb92d2",
+          "name": "http://127.0.0.1:33157/",
+          "kind": "route",
+          "startTime": 1784096601767,
+          "attributes": {
+            "route": "http://127.0.0.1:33157/"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "3679a6ddf9156410",
+          "parentSpanId": "6bd8eccda649f477",
+          "name": "mobile",
+          "kind": "viewport",
+          "startTime": 1784096601767,
+          "attributes": {
+            "viewportProfileId": "mobile"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "ca5ea68fe70b28a5",
+          "parentSpanId": "3679a6ddf9156410",
+          "name": "navigate",
+          "kind": "stage",
+          "startTime": 1784096601767,
+          "endTime": 1784096601917,
+          "attributes": {
+            "elapsedMs": 150
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "d64a46ce2fe1311c",
+          "parentSpanId": "3679a6ddf9156410",
+          "name": "collect",
+          "kind": "stage",
+          "startTime": 1784096601917,
+          "endTime": 1784096601934,
+          "attributes": {
+            "elapsedMs": 17
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "b0083c0722258139",
+          "parentSpanId": "3679a6ddf9156410",
+          "name": "match",
+          "kind": "stage",
+          "startTime": 1784096601934,
+          "endTime": 1784096601937,
+          "attributes": {
+            "elapsedMs": 3
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "30a56cff8852b496",
+          "parentSpanId": "3679a6ddf9156410",
+          "name": "resolve",
+          "kind": "stage",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {
+            "elapsedMs": 0
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c8078934b68337d",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": "body",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c7d12934b655054",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".nav",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c8744934b6df9cf",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".nav a",
+                "matchedElementCount": 3
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c83de934b6b16a6",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".hero",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c72e0934b5ca6d9",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".hero h1",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c6f7a934b59c3b0",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".hero p",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "9c79ac934b626d2b",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".spacer",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "7eedfd7c8ed48d99",
+          "parentSpanId": "b0083c0722258139",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096601937,
+          "endTime": 1784096601937,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.excluded",
+              "timestamp": 1784096601937,
+              "attributes": {
+                "selector": ".footer",
+                "matchedElementCount": 0
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "d87de941e4fb0456",
+          "parentSpanId": "6bd8eccda649f477",
+          "name": "serialize",
+          "kind": "stage",
+          "startTime": 1784096601771,
+          "endTime": 1784096601771,
+          "attributes": {
+            "elapsedMs": 0,
+            "note": "cross-viewport stage: measured once for the whole extract() call, attributed identically to each viewport bundle"
+          },
+          "events": [],
+          "status": "ok"
+        }
+      ]
+    }
+  }
+]

@@ -12,3 +12,6 @@ dist/
 # Stray CLI extraction outputs from manual runs at repo root (regenerable; never source).
 /critical-*.css
 /critical-*-report.json
+
+# apps/visualizer's generate-sample-data.mjs output (regenerable; never source).
+apps/visualizer/.sample-data/

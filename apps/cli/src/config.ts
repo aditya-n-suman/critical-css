@@ -58,6 +58,8 @@ export interface CliConfig {
   readonly writeBaseline?: string
   /** Max allowed CSS growth percent for the baseline gate (`--max-growth`). */
   readonly maxGrowth?: number
+  /** Distributed crawl shard spec, `"<i>/<n>"` (`--shard`, M5 exit criterion 4). */
+  readonly shard?: string
 }
 
 export class ConfigError extends Error {}
@@ -72,7 +74,7 @@ function validateConfig(raw: unknown): CliConfig {
     throw new ConfigError('config: root must be a JSON object')
   }
   const obj = raw as Record<string, unknown>
-  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'reportDir', 'minify', 'format', 'sandboxPolicy', 'cacheDir', 'noCache', 'routes', 'baseUrl', 'outDir', 'compareBaseline', 'writeBaseline', 'maxGrowth'])
+  const known = new Set(['url', 'viewport', 'viewports', 'mode', 'output', 'report', 'reportDir', 'minify', 'format', 'sandboxPolicy', 'cacheDir', 'noCache', 'routes', 'baseUrl', 'outDir', 'compareBaseline', 'writeBaseline', 'maxGrowth', 'shard'])
   for (const key of Object.keys(obj)) {
     if (!known.has(key)) throw new ConfigError(`config: unknown field "${key}"`)
   }
@@ -95,6 +97,7 @@ function validateConfig(raw: unknown): CliConfig {
     compareBaseline?: string
     writeBaseline?: string
     maxGrowth?: number
+    shard?: string
   } = {}
 
   if (obj.url !== undefined) {
@@ -174,6 +177,10 @@ function validateConfig(raw: unknown): CliConfig {
       'a non-negative finite number (percent)',
     )
     config.maxGrowth = obj.maxGrowth as number
+  }
+  if (obj.shard !== undefined) {
+    assertType(typeof obj.shard === 'string', 'shard', 'a string of the form "<i>/<n>"')
+    config.shard = obj.shard as string
   }
 
   return config

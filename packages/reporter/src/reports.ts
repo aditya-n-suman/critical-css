@@ -1,16 +1,17 @@
 /**
- * Reporter (docs/tasks/009-Implement-Reporter.md, docs/design/1000-1002, AT-10).
+ * Reporter (docs/tasks/009-Implement-Reporter.md, docs/design/1000-1003, AT-10).
  *
  * Pure sink: reads terminal pipeline outputs by reference and emits the four
- * M3 reports + the dependency-graph JSON (REQ-460). Never mutates its inputs.
- * Extraction trace (1003), HTML overlay (1004), and the Debug UI (1005,
- * apps/visualizer) are M5 — out of scope here.
+ * M3 reports + the dependency-graph JSON (REQ-460), plus (M5) the extraction
+ * trace (see trace.ts). Never mutates its inputs. HTML overlay (1004) and the
+ * Debug UI (1005, apps/visualizer) remain out of scope for this package.
  */
 
 import type { CssomRuleList } from '@critical-css/collector'
 import type { DependencyGraph } from '@critical-css/dependency-graph'
 import type { CssomRuleMatch } from '@critical-css/matcher'
 import type { DependencyNode, ExtractionMode, StageTiming } from '@critical-css/shared'
+import { buildExtractionTrace, type ExtractionTraceReport } from './trace.js'
 
 const ruleIdentity = (stylesheetIndex: number, ruleIndexPath: readonly number[]): string =>
   `${stylesheetIndex}:${ruleIndexPath.join('.')}`
@@ -67,6 +68,8 @@ export interface ReportBundle {
   readonly timing: TimingReport
   readonly stylesheetContribution: StylesheetContributionReport
   readonly dependencyGraph: DependencyGraphReport
+  /** The 6th §2.12 diagnostic (docs/design/1003-Tracing.md) — see trace.ts. */
+  readonly extractionTrace: ExtractionTraceReport
 }
 
 export interface ReportInput {
@@ -79,6 +82,14 @@ export interface ReportInput {
   readonly manifest: readonly DependencyNode[]
   readonly graph?: DependencyGraph
   readonly timing: readonly StageTiming[]
+  /**
+   * Correlates this bundle's trace with Logging (1001) / Metrics (1002) per
+   * 1003 §8.1. Optional for backward compatibility with callers built before
+   * the extraction trace existed; when omitted, a deterministic (not
+   * fabricated — stable and reproducible) fallback is derived from
+   * `route`/`viewportProfileId` so the trace remains fully populated.
+   */
+  readonly runId?: string
 }
 
 const sheetKey = (href: string | null, index: number): string => href ?? `inline#${index}`
@@ -151,6 +162,18 @@ export class Reporter {
     // Dependency-graph report (REQ-460): resolved nodes/edges verbatim as JSON.
     const dependencyGraph = buildGraphReport(input.manifest, input.graph)
 
+    const runId = input.runId ?? `run-${input.route}-${input.viewportProfileId}`
+    const extractionTrace = buildExtractionTrace({
+      runId,
+      route: input.route,
+      viewportProfileId: input.viewportProfileId,
+      timing: input.timing,
+      matchedSelectors: matchedRows,
+      unmatchedSelectors: unmatchedRows,
+      dependencyGraph,
+      assembledAt: Date.now(),
+    })
+
     return {
       route: input.route,
       viewportProfileId: input.viewportProfileId,
@@ -160,6 +183,7 @@ export class Reporter {
       timing: { stages: [...input.timing], totalMs },
       stylesheetContribution: { stylesheets, totalBytes },
       dependencyGraph,
+      extractionTrace,
     }
   }
 

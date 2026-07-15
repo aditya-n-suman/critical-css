@@ -1,0 +1,896 @@
+[
+  {
+    "route": "http://127.0.0.1:33157/about",
+    "viewportProfileId": "desktop",
+    "mode": "cssom",
+    "matchedSelectors": {
+      "count": 7,
+      "rows": [
+        {
+          "selectorText": "body",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            0
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            1
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".about-hero",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            2
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".about-hero h1",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            3
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".team",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            4
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".team .member",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            5
+          ],
+          "matchedNodeCount": 2
+        },
+        {
+          "selectorText": ".spacer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            6
+          ],
+          "matchedNodeCount": 1
+        }
+      ]
+    },
+    "unmatchedSelectors": {
+      "count": 1,
+      "rows": [
+        {
+          "selectorText": ".footer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            7
+          ]
+        }
+      ]
+    },
+    "timing": {
+      "stages": [
+        {
+          "stage": "navigate",
+          "elapsedMs": 149
+        },
+        {
+          "stage": "collect",
+          "elapsedMs": 12
+        },
+        {
+          "stage": "match",
+          "elapsedMs": 3
+        },
+        {
+          "stage": "resolve",
+          "elapsedMs": 0
+        }
+      ],
+      "totalMs": 164
+    },
+    "stylesheetContribution": {
+      "stylesheets": [
+        {
+          "stylesheetHref": "inline#0",
+          "retainedRuleCount": 7,
+          "totalRuleCount": 8,
+          "byteContribution": 410
+        }
+      ],
+      "totalBytes": 410
+    },
+    "dependencyGraph": {
+      "nodes": [
+        {
+          "id": "rule:0:0",
+          "type": "rule",
+          "value": "body"
+        },
+        {
+          "id": "rule:0:1",
+          "type": "rule",
+          "value": ".nav"
+        },
+        {
+          "id": "rule:0:2",
+          "type": "rule",
+          "value": ".about-hero"
+        },
+        {
+          "id": "rule:0:3",
+          "type": "rule",
+          "value": ".about-hero h1"
+        },
+        {
+          "id": "rule:0:4",
+          "type": "rule",
+          "value": ".team"
+        },
+        {
+          "id": "rule:0:5",
+          "type": "rule",
+          "value": ".team .member"
+        },
+        {
+          "id": "rule:0:6",
+          "type": "rule",
+          "value": ".spacer"
+        }
+      ],
+      "edges": []
+    },
+    "extractionTrace": {
+      "spans": [
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "cb295356915e3630",
+          "name": "run",
+          "kind": "run",
+          "startTime": 1784096601963,
+          "attributes": {
+            "runId": "run-desktop"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "afd435559c782810",
+          "parentSpanId": "cb295356915e3630",
+          "name": "http://127.0.0.1:33157/about",
+          "kind": "route",
+          "startTime": 1784096601963,
+          "attributes": {
+            "route": "http://127.0.0.1:33157/about"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "2ca3b65145fcd7a5",
+          "parentSpanId": "afd435559c782810",
+          "name": "desktop",
+          "kind": "viewport",
+          "startTime": 1784096601963,
+          "attributes": {
+            "viewportProfileId": "desktop"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "015df42f298a0d98",
+          "parentSpanId": "2ca3b65145fcd7a5",
+          "name": "navigate",
+          "kind": "stage",
+          "startTime": 1784096601963,
+          "endTime": 1784096602112,
+          "attributes": {
+            "elapsedMs": 149
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "3847fe95f2589ca9",
+          "parentSpanId": "2ca3b65145fcd7a5",
+          "name": "collect",
+          "kind": "stage",
+          "startTime": 1784096602112,
+          "endTime": 1784096602124,
+          "attributes": {
+            "elapsedMs": 12
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "86363f4ca0e12e7c",
+          "parentSpanId": "2ca3b65145fcd7a5",
+          "name": "match",
+          "kind": "stage",
+          "startTime": 1784096602124,
+          "endTime": 1784096602127,
+          "attributes": {
+            "elapsedMs": 3
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "b67307c19859d643",
+          "parentSpanId": "2ca3b65145fcd7a5",
+          "name": "resolve",
+          "kind": "stage",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {
+            "elapsedMs": 0
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b88ca0bf97282c0",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": "body",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b8c300bf97565e9",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".nav",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b8f960bf9784912",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".about-hero",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b92fc0bf97b2c3b",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".about-hero h1",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b96620bf97e0f64",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".team",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b99c80bf980f28d",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".team .member",
+                "matchedElementCount": 2
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "8b9d2e0bf983d5b6",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".spacer",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "b6dd175e094abde4",
+          "parentSpanId": "86363f4ca0e12e7c",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602127,
+          "endTime": 1784096602127,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.excluded",
+              "timestamp": 1784096602127,
+              "attributes": {
+                "selector": ".footer",
+                "matchedElementCount": 0
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-desktop",
+          "traceId": "0e7048700669047376a891d14635d735",
+          "spanId": "b656fdec9f6a0bf1",
+          "parentSpanId": "afd435559c782810",
+          "name": "serialize",
+          "kind": "stage",
+          "startTime": 1784096602154,
+          "endTime": 1784096602154,
+          "attributes": {
+            "elapsedMs": 0,
+            "note": "cross-viewport stage: measured once for the whole extract() call, attributed identically to each viewport bundle"
+          },
+          "events": [],
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "route": "http://127.0.0.1:33157/about",
+    "viewportProfileId": "mobile",
+    "mode": "cssom",
+    "matchedSelectors": {
+      "count": 7,
+      "rows": [
+        {
+          "selectorText": "body",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            0
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".nav",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            1
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".about-hero",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            2
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".about-hero h1",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            3
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".team",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            4
+          ],
+          "matchedNodeCount": 1
+        },
+        {
+          "selectorText": ".team .member",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            5
+          ],
+          "matchedNodeCount": 2
+        },
+        {
+          "selectorText": ".spacer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            6
+          ],
+          "matchedNodeCount": 1
+        }
+      ]
+    },
+    "unmatchedSelectors": {
+      "count": 1,
+      "rows": [
+        {
+          "selectorText": ".footer",
+          "stylesheetHref": null,
+          "ruleIndexPath": [
+            7
+          ]
+        }
+      ]
+    },
+    "timing": {
+      "stages": [
+        {
+          "stage": "navigate",
+          "elapsedMs": 143
+        },
+        {
+          "stage": "collect",
+          "elapsedMs": 13
+        },
+        {
+          "stage": "match",
+          "elapsedMs": 2
+        },
+        {
+          "stage": "resolve",
+          "elapsedMs": 0
+        }
+      ],
+      "totalMs": 158
+    },
+    "stylesheetContribution": {
+      "stylesheets": [
+        {
+          "stylesheetHref": "inline#0",
+          "retainedRuleCount": 7,
+          "totalRuleCount": 8,
+          "byteContribution": 410
+        }
+      ],
+      "totalBytes": 410
+    },
+    "dependencyGraph": {
+      "nodes": [
+        {
+          "id": "rule:0:0",
+          "type": "rule",
+          "value": "body"
+        },
+        {
+          "id": "rule:0:1",
+          "type": "rule",
+          "value": ".nav"
+        },
+        {
+          "id": "rule:0:2",
+          "type": "rule",
+          "value": ".about-hero"
+        },
+        {
+          "id": "rule:0:3",
+          "type": "rule",
+          "value": ".about-hero h1"
+        },
+        {
+          "id": "rule:0:4",
+          "type": "rule",
+          "value": ".team"
+        },
+        {
+          "id": "rule:0:5",
+          "type": "rule",
+          "value": ".team .member"
+        },
+        {
+          "id": "rule:0:6",
+          "type": "rule",
+          "value": ".spacer"
+        }
+      ],
+      "edges": []
+    },
+    "extractionTrace": {
+      "spans": [
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "a10da324e1bb92d2",
+          "name": "run",
+          "kind": "run",
+          "startTime": 1784096602151,
+          "attributes": {
+            "runId": "run-mobile"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "a9710b78b3005102",
+          "parentSpanId": "a10da324e1bb92d2",
+          "name": "http://127.0.0.1:33157/about",
+          "kind": "route",
+          "startTime": 1784096602151,
+          "attributes": {
+            "route": "http://127.0.0.1:33157/about"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "6a5bcd759d133cd5",
+          "parentSpanId": "a9710b78b3005102",
+          "name": "mobile",
+          "kind": "viewport",
+          "startTime": 1784096602151,
+          "attributes": {
+            "viewportProfileId": "mobile"
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "ac98f910e8b6ed08",
+          "parentSpanId": "6a5bcd759d133cd5",
+          "name": "navigate",
+          "kind": "stage",
+          "startTime": 1784096602151,
+          "endTime": 1784096602294,
+          "attributes": {
+            "elapsedMs": 143
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "f182dd39ee318b39",
+          "parentSpanId": "6a5bcd759d133cd5",
+          "name": "collect",
+          "kind": "stage",
+          "startTime": 1784096602294,
+          "endTime": 1784096602307,
+          "attributes": {
+            "elapsedMs": 13
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "30f4394efe86aecc",
+          "parentSpanId": "6a5bcd759d133cd5",
+          "name": "match",
+          "kind": "stage",
+          "startTime": 1784096602307,
+          "endTime": 1784096602309,
+          "attributes": {
+            "elapsedMs": 2
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "f3c7f67fbbc52453",
+          "parentSpanId": "6a5bcd759d133cd5",
+          "name": "resolve",
+          "kind": "stage",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {
+            "elapsedMs": 0
+          },
+          "events": [],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf8bd6333c9c0a50",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": "body",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf8f3c333c9eed79",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".nav",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf92a2333ca1d0a2",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".about-hero",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf9608333ca4b3cb",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".about-hero h1",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf996e333ca796f4",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".team",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cf9cd4333caa7a1d",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".team .member",
+                "matchedElementCount": 2
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "cfa03a333cad5d46",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.matched",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".spacer",
+                "matchedElementCount": 1
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "407ddc3b5ace2214",
+          "parentSpanId": "30f4394efe86aecc",
+          "name": "selector-match",
+          "kind": "decision",
+          "startTime": 1784096602309,
+          "endTime": 1784096602309,
+          "attributes": {},
+          "events": [
+            {
+              "name": "rule.excluded",
+              "timestamp": 1784096602309,
+              "attributes": {
+                "selector": ".footer",
+                "matchedElementCount": 0
+              }
+            }
+          ],
+          "status": "ok"
+        },
+        {
+          "runId": "run-mobile",
+          "traceId": "74ed3c1217a25039b42808b25993cb2f",
+          "spanId": "dbb3741a451b1ebb",
+          "parentSpanId": "a9710b78b3005102",
+          "name": "serialize",
+          "kind": "stage",
+          "startTime": 1784096602154,
+          "endTime": 1784096602154,
+          "attributes": {
+            "elapsedMs": 0,
+            "note": "cross-viewport stage: measured once for the whole extract() call, attributed identically to each viewport bundle"
+          },
+          "events": [],
+          "status": "ok"
+        }
+      ]
+    }
+  }
+]

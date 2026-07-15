@@ -36,6 +36,8 @@ import type { Format, Mode, ViewportName } from './config.js'
 import { ENGINE_VERSION, extract, type ExtractOutcome, type ExtractRequest } from './extract.js'
 import { collectFingerprintInputs, InputCollectionError } from './inputs.js'
 import { loadRoutes, type RouteWorkUnit } from './routes.js'
+import { selectShardUnits, type ShardSpec } from './shard.js'
+import { ConfigError } from './config.js'
 
 export interface RunOptions {
   readonly url: string | null
@@ -60,6 +62,14 @@ export interface RunOptions {
   readonly compareBaseline: string | null
   readonly writeBaseline: string | null
   readonly maxGrowth: number
+  /**
+   * Distributed crawl (M5 exit criterion 4, `--shard <i>/<n>`): this process
+   * extracts only the subset of the expanded `--routes` manifest assigned to
+   * shard `i` of `n` (see `shard.ts`). `null` (the default) is the
+   * unsharded, backward-compatible single-process crawl of the full route
+   * set — every existing single-process caller is unaffected.
+   */
+  readonly shard: ShardSpec | null
 }
 
 export interface RunIo {
@@ -307,13 +317,31 @@ export async function run(options: RunOptions, io: RunIo, deps: RunDeps = {}): P
     collectInputs: deps.collectInputs ?? collectFingerprintInputs,
   }
 
+  // Distributed crawl (M5 exit criterion 4): validated before any browser
+  // launches, same as every other cross-field check in this function.
+  if (options.shard !== null) {
+    if (options.routes === null) {
+      throw new ConfigError('--shard applies to --routes mode only (a single --url has nothing to shard)')
+    }
+    if (options.compareBaseline !== null || options.writeBaseline !== null) {
+      throw new ConfigError(
+        '--shard cannot be combined with --compare-baseline/--write-baseline in the same invocation — a shard sees only ' +
+          'its own slice of the route set, so a growth/missing-dependency gate or a baseline snapshot computed from a ' +
+          'partial route set would be misleading; run the gate as a separate, unsharded pass over the merged artifacts ' +
+          'once every shard has completed (see apps/cli/README.md "Distributed crawl")',
+      )
+    }
+  }
+
   // Resolve the batch (validated before any browser launches, 010 §8.1).
   let units: WorkUnit[]
   let routeCache: RouteCache | null = null
   if (options.routes !== null) {
     const loaded = await loadRoutes(options.routes, options.baseUrl as string, options.outDir)
     routeCache = loaded.routeCache
-    units = loaded.units.map((route) => ({
+    const assignedRoutes =
+      options.shard !== null ? selectShardUnits(loaded.units, options.shard) : loaded.units
+    units = assignedRoutes.map((route) => ({
       name: route.pattern,
       url: route.url,
       artifactPath: route.outputPath,
@@ -322,6 +350,19 @@ export async function run(options: RunOptions, io: RunIo, deps: RunDeps = {}): P
   } else {
     units = [{ name: options.url as string, url: options.url as string, artifactPath: null, route: null }]
   }
+
+  // Distributed-crawl observability (mirrors the cache hit/miss line below):
+  // an aggregator diffing this shard's stderr against the others, or a CI
+  // matrix job summary, must be able to see which slice each shard actually
+  // took without re-deriving `selectShardUnits` itself.
+  if (options.shard !== null) {
+    io.stderr(
+      `shard ${options.shard.index}/${options.shard.total}: ${units.length} route(s) assigned — ${units
+        .map((u) => u.name)
+        .join(', ')}`,
+    )
+  }
+
   const baseline: Baseline | null =
     options.compareBaseline !== null ? await loadBaseline(options.compareBaseline) : null
 

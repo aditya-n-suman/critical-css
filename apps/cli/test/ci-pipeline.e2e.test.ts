@@ -92,6 +92,7 @@ describe('multi-route CI pipeline e2e (M4 exit criterion 2)', () => {
     compareBaseline: null,
     writeBaseline: null,
     maxGrowth: 5,
+    shard: null,
     ...overrides,
   })
 

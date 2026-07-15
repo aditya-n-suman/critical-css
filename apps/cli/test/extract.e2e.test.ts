@@ -61,3 +61,32 @@ describe('golden baseline (byte-exact, M1 exit criterion 5)', () => {
     })
   }
 })
+
+describe('extraction trace (M5 A1/A3 regression)', () => {
+  it('two different routes at the same viewport get distinct runId/traceId/run-span spanId (A1)', async () => {
+    const staticOutcome = await extract({ url: fixtureUrl('static'), viewport: 'desktop' })
+    const mobileOutcome = await extract({ url: fixtureUrl('mobile'), viewport: 'desktop' })
+
+    const staticRunSpan = staticOutcome.reports[0]?.extractionTrace.spans.find((s) => s.kind === 'run')
+    const mobileRunSpan = mobileOutcome.reports[0]?.extractionTrace.spans.find((s) => s.kind === 'run')
+    expect(staticRunSpan).toBeDefined()
+    expect(mobileRunSpan).toBeDefined()
+
+    // Before the A1 fix, runId was derived from the viewport profile name
+    // only (`run-desktop`) — identical for both fixtures here despite being
+    // different routes, which collapsed traceId and the run-span spanId too.
+    expect(staticRunSpan!.runId).not.toBe(mobileRunSpan!.runId)
+    expect(staticRunSpan!.traceId).not.toBe(mobileRunSpan!.traceId)
+    expect(staticRunSpan!.spanId).not.toBe(mobileRunSpan!.spanId)
+  })
+
+  it('every span in a built ExtractionTraceReport has a defined endTime >= startTime (A3)', async () => {
+    const outcome = await extract({ url: fixtureUrl('static'), viewport: 'desktop' })
+    for (const report of outcome.reports) {
+      for (const span of report.extractionTrace.spans) {
+        expect(span.endTime).toBeDefined()
+        expect(span.endTime as number).toBeGreaterThanOrEqual(span.startTime)
+      }
+    }
+  })
+})

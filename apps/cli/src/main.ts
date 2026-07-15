@@ -13,9 +13,10 @@ import type { SandboxPolicy } from '@critical-css/shared'
 import { ConfigError, isSandboxPolicy, isViewport, loadConfigFile } from './config.js'
 import type { CliConfig, Mode, ViewportName } from './config.js'
 import { run, type RunOptions } from './run.js'
+import { parseShardSpec, type ShardSpec } from './shard.js'
 
 const USAGE =
-  'Usage: critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <origin>) [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--report-dir <dir>] [--out-dir <dir>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--cache-dir <dir>] [--no-cache] [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>] [--config <path>]\n' +
+  'Usage: critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <origin>) [--viewport desktop|tablet|mobile] [--viewports d,t,m] [--mode cssom|coverage|hybrid] [--output <path>] [--report <path>] [--report-dir <dir>] [--out-dir <dir>] [--minify] [--format raw-css|inline-style|json-envelope] [--sandbox-policy full|ci-container|unsafe-no-sandbox] [--cache-dir <dir>] [--no-cache] [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>] [--shard <i>/<n>] [--config <path>]\n' +
   'Exit codes: 0 success, 1 extraction error, 2 usage, 3 baseline gate failed.'
 
 /**
@@ -80,6 +81,7 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
   let compareBaseline: string | null = fileConfig.compareBaseline ?? null
   let writeBaseline: string | null = fileConfig.writeBaseline ?? null
   let maxGrowth: number = fileConfig.maxGrowth ?? 5
+  let shard: ShardSpec | null = fileConfig.shard !== undefined ? parseShardSpec(fileConfig.shard) : null
   for (let i = 0; i < rest.length; i++) {
     const flag = rest[i]
     const value = rest[i + 1]
@@ -185,6 +187,11 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
         i += 1
         break
       }
+      case '--shard':
+        if (value === undefined) throw new UsageError(`--shard requires a value\n${USAGE}`)
+        shard = parseShardSpec(value)
+        i += 1
+        break
       case '--config':
         // Already consumed by findConfigFlag's pre-pass; skip its value here.
         if (value === undefined) throw new UsageError(`--config requires a value\n${USAGE}`)
@@ -208,6 +215,14 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
   if (url !== null && reportDir !== null) {
     throw new UsageError(`--report-dir applies to --routes mode; use --report for a single --url\n${USAGE}`)
   }
+  if (shard !== null && routes === null) {
+    throw new UsageError(`--shard applies to --routes mode only\n${USAGE}`)
+  }
+  if (shard !== null && (compareBaseline !== null || writeBaseline !== null)) {
+    throw new UsageError(
+      `--shard cannot be combined with --compare-baseline/--write-baseline in the same invocation\n${USAGE}`,
+    )
+  }
   return {
     url,
     routes,
@@ -226,6 +241,7 @@ export async function parseArgs(argv: readonly string[]): Promise<RunOptions> {
     compareBaseline,
     writeBaseline,
     maxGrowth,
+    shard,
   }
 }
 

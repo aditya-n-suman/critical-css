@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "module": "NodeNext",
+    "types": ["node"]
+  },
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/reporter" }
+  ],
+  "include": ["src"]
+}

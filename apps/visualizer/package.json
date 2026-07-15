@@ -1,0 +1,31 @@
+{
+  "name": "@critical-css/visualizer",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "critical-css-visualizer": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "serve": "node dist/cli.js serve",
+    "generate-sample-data": "node scripts/generate-sample-data.mjs"
+  },
+  "dependencies": {
+    "@critical-css/reporter": "workspace:*",
+    "@critical-css/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
+  }
+}

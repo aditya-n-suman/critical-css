@@ -11,6 +11,7 @@ critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <
   [--sandbox-policy full|ci-container|unsafe-no-sandbox]
   [--cache-dir <dir>] [--no-cache]
   [--compare-baseline <path>] [--write-baseline <path>] [--max-growth <percent>]
+  [--shard <i>/<n>]
   [--config <path>]
 ```
 
@@ -63,7 +64,7 @@ critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <
   ```
   overrides the config's `mobile` with `desktop` for this one run; everything else comes from the file.
   The M4 CI keys are also accepted: `cacheDir`, `noCache`, `routes`, `baseUrl`, `outDir`,
-  `compareBaseline`, `writeBaseline`, `maxGrowth`.
+  `compareBaseline`, `writeBaseline`, `maxGrowth`. `shard` (a `"<i>/<n>"` string, M5) is accepted too.
 
 ## Incremental cache (M4, 800/801/802)
 
@@ -102,6 +103,51 @@ critical-css-engine extract (--url <url> | --routes <manifest.json> --base-url <
   strictly more than `--max-growth <percent>` (default `5`) fails the build with exit code `3`,
   as does any detected missing dependency (`MISSING_*` diagnostics). New/removed routes are
   warnings — refresh the baseline with an explicit, reviewed `--write-baseline`.
+
+## Distributed crawl (M5 exit criterion 4)
+
+- `--shard <i>/<n>` (`--routes` mode only, 1-based) runs this process over only the slice of the
+  expanded route manifest assigned to shard `i` of `n` — a **route-manifest shard**, not an
+  in-process worker-thread pool, so shards can genuinely run on separate machines: nothing about
+  shard `i` depends on being co-located with shard `j`, only on both sharing a filesystem view of
+  `--out-dir` (and, optionally, `--cache-dir`). One machine gets parallelism by launching `n` shard
+  invocations concurrently (background processes, or an `n`-way CI matrix job); there is no
+  additional `--workers` in-process pool, since the shard model alone satisfies the milestone
+  criterion without a second, redundant concurrency primitive.
+  ```
+  critical-css-engine extract --routes routes.json --base-url https://example.com --out-dir dist --shard 1/3
+  critical-css-engine extract --routes routes.json --base-url https://example.com --out-dir dist --shard 2/3
+  critical-css-engine extract --routes routes.json --base-url https://example.com --out-dir dist --shard 3/3
+  ```
+  All three commands above, run on the same or different machines (in any order, at any relative
+  speed), together produce byte-identical artifacts to a single unsharded
+  `critical-css-engine extract --routes routes.json --base-url https://example.com --out-dir dist`
+  — this is the determinism property `apps/cli/test/distributed-crawl.e2e.test.ts` verifies.
+- **Deterministic route→shard assignment.** Routes are canonicalized (sorted by pattern) and then
+  assigned round-robin (`sortedIndex % n === i - 1`) — a pure function of the route's own identity,
+  independent of manifest authoring order, which worker/machine runs it, or completion order. Two
+  processes computing shard `2/3` for the same manifest always agree on exactly which routes that
+  is before either has extracted anything.
+- **Aggregation is "write to the same `--out-dir`/`--report-dir`."** Since each route's artifact
+  path is already disjoint (routes.ts's out-dir-containment check), no shard's output can collide
+  with another's — there is no separate merge step beyond every shard's writes landing in the
+  shared directory.
+- **Shared `--cache-dir`.** Shards sharing a cache directory do not corrupt each other: disjoint
+  routes hash to disjoint cache keys (801 fingerprint), and `DiskCacheStore` writes atomically, so
+  concurrent shards touching different keys never race on the same file.
+- **Per-shard failure semantics.** A shard's own exit code still fails-at-end (REQ-453) over the
+  routes *it* attempted — sharding doesn't change that. It does **not**, by itself, catch a shard
+  that never ran at all (crashed before `run()` returned, was never scheduled). Use
+  `missingShardRoutes(manifestPatterns, producedPatterns)` (`@critical-css/cli`'s `shard.ts`) at
+  aggregation time — after collecting every shard's outcome, diff the full manifest's route
+  patterns against the union of patterns actually produced; a nonempty result means the distributed
+  crawl is incomplete and must not be treated as done, even though every shard that *did* run looks
+  complete in isolation.
+- `--shard` is mutually exclusive, in the same invocation, with `--compare-baseline`/
+  `--write-baseline`: a shard only sees its own slice of the route set, so a growth/missing-
+  dependency gate or a baseline snapshot computed from a partial route set would be misleading. Run
+  the gate as a separate, unsharded pass once every shard has finished and artifacts have merged
+  into the shared `--out-dir`.
 
 Deferrals: source maps (605); `apps/visualizer` (M5); visual-diff harness (G4).
 

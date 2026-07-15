@@ -64,6 +64,7 @@ describe('run()', () => {
     compareBaseline: null,
     writeBaseline: null,
     maxGrowth: 5,
+    shard: null,
     ...overrides,
   })
 
